@@ -1,0 +1,39 @@
+name: comsats_cgpa_calculator
+description: COMSATS CGPA Calculator - Flutter port of Tailwind UI
+publish_to: "none"
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- UI / Icons ---
+  google_fonts: ^6.1.0
+  cupertino_icons: ^1.0.8
+  ionicons: ^0.2.1
+
+  # --- Core Utilities ---
+  shared_preferences: ^2.2.3
+  url_launcher: ^6.3.0
+  pdf: ^3.11.0
+  printing: ^5.13.1
+  path_provider: ^2.1.4
+  flutter_launcher_icons: ^0.13.1
+
+  # --- Optional Theming / Essentials ---
+  flutter_lints: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf

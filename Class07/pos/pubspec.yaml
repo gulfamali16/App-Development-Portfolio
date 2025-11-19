@@ -1,0 +1,46 @@
+name: posapp
+description: "Green Fresh POS application."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.9.2 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Core dependencies
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
+
+  pdf: ^3.10.7
+  printing: ^5.13.3
+  path_provider: ^2.1.2
+  share_plus: ^10.0.2
+  shared_preferences: ^2.3.2       # ✅ fixed typo (was hared_preferences)
+  image_picker: ^1.1.2
+  provider: ^6.1.2
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Optional: add fonts or images if you have them later.
+  # assets:
+  #   - assets/images/
+  #
+  # fonts:
+  #   - family: WorkSans
+  #     fonts:
+  #       - asset: assets/fonts/WorkSans-Regular.ttf
+  #       - asset: assets/fonts/WorkSans-SemiBold.ttf
+  #         weight: 600
+  #       - asset: assets/fonts/WorkSans-Bold.ttf
+  #         weight: 700
