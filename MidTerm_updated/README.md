@@ -750,3 +750,9 @@ Dashboard Ready
   <img src="https://github.com/user-attachments/assets/69432d10-4998-4df4-8fa5-b47900247595" width="120" />
   <img src="https://github.com/user-attachments/assets/9f27c63e-7b91-44d3-af2c-7a4ff41be92a" width="120" />
 </p>
+
+
+## 🎥 App Video Demo
+
+▶ **Watch Full App Demo Video**  
+https://drive.google.com/file/d/1FZ9hWCQ8QeCjKzX8Adyd31HGXzL0T-Sy/view?usp=drivesdk
