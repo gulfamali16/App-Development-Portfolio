@@ -15,6 +15,7 @@
 10. [Code Examples](#10-code-examples)
 11. App Screenshots
 12. App Video Demo
+13. App UI 
 
 ---
 
@@ -760,4 +761,7 @@ Dashboard Ready
 https://drive.google.com/file/d/1FZ9hWCQ8QeCjKzX8Adyd31HGXzL0T-Sy/view?usp=drivesdk
 
 
+## 🎥 App UI Design 
 
+▶ **App UI in Google Slitch and**  
+https://stitch.withgoogle.com/projects/7224994460441103714
