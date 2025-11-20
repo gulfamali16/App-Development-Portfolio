@@ -2,7 +2,6 @@
 
 
 ## 📋 **Table of Contents**
-
 1. [App Overview](#1-app-overview)
 2. [Architecture & Structure](#2-architecture--structure)
 3. [Setup & Installation](#3-setup--installation)
@@ -13,9 +12,10 @@
 8. [Background Tasks](#8-background-tasks)
 9. [Troubleshooting](#9-troubleshooting)
 10. [Code Examples](#10-code-examples)
-11. App Screenshots
-12. App Video Demo
-13. App UI 
+11. [App Screenshots](#11-app-screenshots)
+12. [App Promo](#12-app-promo)
+13. [App UI Design](#13-app-ui-design)
+
 
 ---
 
@@ -25,16 +25,16 @@
 A comprehensive Flutter task management application with smart notifications, background task monitoring, repeat tasks, and theme customization.
 
 ### **Key Features**
-✅ **Task Management** - Create, edit, delete, and complete tasks  
-✅ **Smart Notifications** - Reminder + Due Now notifications with action buttons  
-✅ **Background Monitoring** - Auto-detects missed/expired tasks every 15 minutes  
-✅ **Repeat Tasks** - Daily, Weekly, Monthly auto-rescheduling  
-✅ **Task Status Tracking** - Pending, Completed, Missed, Cancelled  
-✅ **Theme Support** - Light/Dark/Auto modes  
-✅ **Export Options** - PDF and CSV export  
-✅ **Search & Filters** - Today, Completed, Repeated, Missed, All  
-✅ **Notification Actions** - Complete or Snooze from notification  
-✅ **Debug Tools** - Built-in notification testing screen  
+- ✅ **Task Management** - Create, edit, delete, and complete tasks  
+- ✅ **Smart Notifications** - Reminder + Due Now notifications with action buttons  
+- ✅ **Background Monitoring** - Auto-detects missed/expired tasks every 15 minutes  
+- ✅ **Repeat Tasks** - Daily, Weekly, Monthly auto-rescheduling  
+- ✅ **Task Status Tracking** - Pending, Completed, Missed, Cancelled  
+- ✅ **Theme Support** - Light/Dark/Auto modes  
+- ✅ **Export Options** - PDF and CSV export  
+- ✅ **Search & Filters** - Today, Completed, Repeated, Missed, All  
+- ✅ **Notification Actions** - Complete or Snooze from notification  
+- ✅ **Debug Tools** - Built-in notification testing screen  
 
 ### **Tech Stack**
 - **Framework:** Flutter (Dart)
@@ -547,7 +547,7 @@ Task complete → Return success
 
 ## **9. Troubleshooting**
 
-### **Common Issues & Solutions**
+### **9.1 Common Issues & Solutions**
 
 #### **Issue 1: Notifications Not Appearing**
 
@@ -682,45 +682,7 @@ print('Today\'s tasks: ${todayTasks.length}');
 
 ---
 
-## **📊 Summary**
-
-### **App Flow Diagram**
-
-```
-App Launch
-    ↓
-Check Setup → [No] → ThemeNameScreen → Dashboard
-    ↓          [Yes] ↓
-Request Permissions
-    ↓
-Initialize Services (Database, Notifications, WorkManager)
-    ↓
-Check Expired Tasks
-    ↓
-Schedule Pending Notifications
-    ↓
-Dashboard Ready
-    ↓
-[Background: WorkManager checks every 15 min]
-```
-
----
-
-### **Key Numbers**
-- **Screens:** 6 (Theme, Dashboard, Manage, Add/Edit, Settings, Notification Test)
-- **Database Tables:** 2 (tasks, app_settings)
-- **Notification Types:** 5 (Reminder, Due Now, Missed, Completed, Rescheduled)
-- **Background Frequency:** Every 15 minutes
-- **Task Statuses:** 4 (Pending, Completed, Missed, Cancelled)
-- **Repeat Rules:** 4 (None, Daily, Weekly, Monthly)
-- **Priority Levels:** 3 (Low, Medium, High)
-
-
-
-
-
-
-## 📱 App Screenshots
+## **11. App Screenshots**
 
 <p float="left">
   <img src="https://github.com/user-attachments/assets/f8b666fe-85f1-4fbf-9d80-43dd5488157e" width="120" />
@@ -754,14 +716,55 @@ Dashboard Ready
   <img src="https://github.com/user-attachments/assets/9f27c63e-7b91-44d3-af2c-7a4ff41be92a" width="120" />
 </p>
 
+---
 
-## 🎥 App Video Demo
+## 🎥 **12. App Promo Video**
 
 ▶ **Watch Full App Demo Video**  
-https://drive.google.com/file/d/1FZ9hWCQ8QeCjKzX8Adyd31HGXzL0T-Sy/view?usp=drivesdk
+
+https://github.com/user-attachments/assets/0b81ef34-4eb9-4fea-9453-14690ef9b5a2
+
+---
 
 
-## 🎥 App UI Design 
+## **13. App UI Design**
 
-▶ **App UI in Google Slitch and**  
+▶ **App UI in Google Stitch**  
 https://stitch.withgoogle.com/projects/7224994460441103714
+
+---
+
+## **📊 Summary**
+
+### **App Flow Diagram**
+
+```
+App Launch
+    ↓
+Check Setup → [No] → ThemeNameScreen → Dashboard
+    ↓          [Yes] ↓
+Request Permissions
+    ↓
+Initialize Services (Database, Notifications, WorkManager)
+    ↓
+Check Expired Tasks
+    ↓
+Schedule Pending Notifications
+    ↓
+Dashboard Ready
+    ↓
+[Background: WorkManager checks every 15 min]
+```
+
+---
+
+### **Key Numbers**
+| Item | Count |
+|------|-------|
+| **Screens** | 6 (Theme, Dashboard, Manage, Add/Edit, Settings, Notification Test) |
+| **Database Tables** | 2 (tasks, app_settings) |
+| **Notification Types** | 5 (Reminder, Due Now, Missed, Completed, Rescheduled) |
+| **Background Frequency** | Every 15 minutes |
+| **Task Statuses** | 4 (Pending, Completed, Missed, Cancelled) |
+| **Repeat Rules** | 4 (None, Daily, Weekly, Monthly) |
+| **Priority Levels** | 3 (Low, Medium, High) |
