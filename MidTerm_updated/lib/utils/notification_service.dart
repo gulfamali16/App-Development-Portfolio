@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'dart:ui';
+import 'database_helper.dart' as db;
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -10,6 +11,9 @@ class NotificationService {
 
   late FlutterLocalNotificationsPlugin _notifications;
   bool _isInitialized = false;
+
+  // ⭐ Callback for handling notification actions
+  static Function(String taskId, String action)? onNotificationAction;
 
   bool get isInitialized => _isInitialized;
 
@@ -22,9 +26,18 @@ class NotificationService {
     print('🔧 Initializing notification service...');
 
     try {
+      // Initialize timezone with auto-detection
       tz.initializeTimeZones();
-      tz.setLocalLocation(tz.getLocation('Asia/Karachi'));
-      print('✅ Timezone set to Asia/Karachi');
+
+      // ⭐ AUTO-DETECT TIMEZONE
+      final String timeZoneName = await _getDeviceTimeZone();
+      try {
+        tz.setLocalLocation(tz.getLocation(timeZoneName));
+        print('✅ Timezone set to: $timeZoneName');
+      } catch (e) {
+        print('⚠️ Timezone $timeZoneName not found, using UTC');
+        tz.setLocalLocation(tz.getLocation('UTC'));
+      }
 
       _notifications = FlutterLocalNotificationsPlugin();
 
@@ -46,8 +59,8 @@ class NotificationService {
       final initialized = await _notifications.initialize(
         settings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
-          print('📨 Notification action: ${response.actionId}');
-          print('📨 Notification payload: ${response.payload}');
+          print('📨 Notification tapped: ${response.actionId}');
+          print('📨 Payload: ${response.payload}');
           _handleNotificationAction(response);
         },
       );
@@ -63,17 +76,102 @@ class NotificationService {
     }
   }
 
-  // ⭐ Handle notification actions (Complete/Snooze)
-  void _handleNotificationAction(NotificationResponse response) {
-    final actionId = response.actionId;
-    final payload = response.payload;
+  // ⭐ AUTO-DETECT DEVICE TIMEZONE
+  Future<String> _getDeviceTimeZone() async {
+    try {
+      final DateTime now = DateTime.now();
+      final int offsetInMinutes = now.timeZoneOffset.inMinutes;
 
-    if (actionId == 'complete') {
-      print('✅ User marked task complete from notification: $payload');
-      // TODO: Call completion handler with task ID from payload
-    } else if (actionId == 'snooze') {
-      print('⏰ User snoozed task: $payload');
-      // TODO: Snooze for 10 minutes
+      // Map common offsets to timezone names
+      if (offsetInMinutes == 300) return 'Asia/Karachi';      // UTC+5
+      if (offsetInMinutes == 330) return 'Asia/Kolkata';      // UTC+5:30
+      if (offsetInMinutes == 480) return 'Asia/Shanghai';     // UTC+8
+      if (offsetInMinutes == 0) return 'UTC';                 // UTC
+      if (offsetInMinutes == -300) return 'America/New_York'; // UTC-5
+      if (offsetInMinutes == -480) return 'America/Los_Angeles'; // UTC-8
+
+      return 'UTC'; // Default fallback
+    } catch (e) {
+      print('⚠️ Could not detect timezone: $e');
+      return 'UTC';
+    }
+  }
+
+  // ⭐ IMPROVED: Handle notification actions (Complete/Snooze)
+  void _handleNotificationAction(NotificationResponse response) async {
+    final actionId = response.actionId;
+    final taskId = response.payload;
+
+    if (taskId == null || taskId.isEmpty) {
+      print('⚠️ No task ID in notification payload');
+      return;
+    }
+
+    try {
+      final dbHelper = db.DatabaseHelper();
+
+      if (actionId == 'complete') {
+        print('✅ Completing task from notification: $taskId');
+
+        // Mark task as completed
+        await dbHelper.toggleTaskCompletion(taskId, true);
+
+        // Show completion confirmation
+        await showTaskCompletedNotification(
+          id: taskId.hashCode + 30000,
+          title: 'Task Completed',
+          body: 'Great job! Task marked as complete.',
+        );
+
+        // Cancel remaining notifications for this task
+        await cancelTaskNotifications(taskId.hashCode);
+
+        // Notify app if callback is set
+        if (onNotificationAction != null) {
+          onNotificationAction!(taskId, 'complete');
+        }
+
+      } else if (actionId == 'snooze') {
+        print('⏰ Snoozing task: $taskId');
+
+        // Get the task
+        final tasks = await dbHelper.getAllTasks();
+        final task = tasks.firstWhere(
+              (t) => t.id == taskId,
+          orElse: () => throw Exception('Task not found'),
+        );
+
+        // Cancel current notifications
+        await cancelTaskNotifications(taskId.hashCode);
+
+        // Reschedule for 10 minutes later
+        final newDueTime = DateTime.now().add(const Duration(minutes: 10));
+
+        await scheduleTaskReminder(
+          id: taskId.hashCode,
+          taskId: taskId,
+          title: '⏰ Snoozed: ${task.title}',
+          body: task.description.isNotEmpty
+              ? task.description
+              : 'This task was snoozed',
+          scheduledTime: newDueTime,
+          minutesBefore: 0,
+        );
+
+        // Show snooze confirmation
+        await showImmediateNotification(
+          id: taskId.hashCode + 40000,
+          title: '⏰ Task Snoozed',
+          body: 'Reminder set for 10 minutes from now',
+        );
+
+        // Notify app if callback is set
+        if (onNotificationAction != null) {
+          onNotificationAction!(taskId, 'snooze');
+        }
+      }
+    } catch (e) {
+      print('❌ Error handling notification action: $e');
     }
   }
 
@@ -84,6 +182,7 @@ class NotificationService {
 
     if (androidPlugin == null) return;
 
+    // HIGH PRIORITY CHANNEL for reminders
     const AndroidNotificationChannel reminderChannel = AndroidNotificationChannel(
       'task_reminder_channel',
       'Task Reminders',
@@ -92,9 +191,12 @@ class NotificationService {
       playSound: true,
       enableVibration: true,
       showBadge: true,
+      enableLights: true,
+      ledColor: Color(0xFF19E619),
     );
 
-    AndroidNotificationChannel missedChannel = AndroidNotificationChannel(
+    // CRITICAL CHANNEL for missed tasks
+    const AndroidNotificationChannel missedChannel = AndroidNotificationChannel(
       'task_missed_channel',
       'Missed Tasks',
       description: 'Notifications for missed tasks',
@@ -150,55 +252,54 @@ class NotificationService {
     scheduledTime.subtract(Duration(minutes: minutesBefore));
 
     if (notificationTime.isBefore(DateTime.now())) {
-      print('❌ Notification time is in past: $notificationTime');
+      print('⚠️ Notification time is in past: $notificationTime');
       return;
     }
 
     print('🕐 Scheduling REMINDER for: $notificationTime');
 
-    final tz.TZDateTime scheduledDate =
-    tz.TZDateTime.from(notificationTime, tz.local);
-
-    AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'task_reminder_channel',
-      'Task Reminders',
-      channelDescription: 'Notifications for upcoming tasks',
-      importance: Importance.max,
-      priority: Priority.high,
-      enableVibration: true,
-      playSound: true,
-      timeoutAfter: 60000,
-      fullScreenIntent: true,
-      visibility: NotificationVisibility.public,
-      icon: '@mipmap/ic_launcher',
-      color: Color(0xFF19E619),
-      // ⭐ ACTION BUTTONS
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          'complete',
-          'Mark Complete',
-          showsUserInterface: true,
-          cancelNotification: true,
-        ),
-        AndroidNotificationAction(
-          'snooze',
-          'Snooze 10min',
-          showsUserInterface: false,
-          cancelNotification: false,
-        ),
-      ],
-    );
-
-    NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      ),
-    );
-
     try {
+      final tz.TZDateTime scheduledDate =
+      tz.TZDateTime.from(notificationTime, tz.local);
+
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'task_reminder_channel',
+        'Task Reminders',
+        channelDescription: 'Notifications for upcoming tasks',
+        importance: Importance.max,
+        priority: Priority.high,
+        enableVibration: true,
+        playSound: true,
+        timeoutAfter: 60000,
+        fullScreenIntent: true,
+        visibility: NotificationVisibility.public,
+        icon: '@mipmap/ic_launcher',
+        color: const Color(0xFF19E619),
+        actions: <AndroidNotificationAction>[
+          const AndroidNotificationAction(
+            'complete',
+            'Mark Complete',
+            showsUserInterface: true,
+            cancelNotification: true,
+          ),
+          const AndroidNotificationAction(
+            'snooze',
+            'Snooze 10min',
+            showsUserInterface: false,
+            cancelNotification: false,
+          ),
+        ],
+      );
+
+      final NotificationDetails details = NotificationDetails(
+        android: androidDetails,
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      );
+
       await _notifications.zonedSchedule(
         id,
         '⏰ $title',
@@ -206,17 +307,33 @@ class NotificationService {
         scheduledDate,
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        payload: taskId, // Pass task ID for action handling
+        uiLocalNotificationDateInterpretation:
+        UILocalNotificationDateInterpretation.absoluteTime,
+        payload: taskId,
       );
 
-      print('✅ REMINDER scheduled! ID: $id');
+      print('✅ REMINDER scheduled! ID: $id for $scheduledDate');
     } catch (e) {
       print('❌ Scheduling error: $e');
-      rethrow;
+      // Retry mechanism
+      await Future.delayed(const Duration(seconds: 2));
+      print('🔄 Retrying notification schedule...');
+      try {
+        await scheduleTaskReminder(
+          id: id,
+          taskId: taskId,
+          title: title,
+          body: body,
+          scheduledTime: scheduledTime,
+          minutesBefore: minutesBefore,
+        );
+      } catch (retryError) {
+        print('❌ Retry failed: $retryError');
+      }
     }
   }
 
-  // ⭐ 2. DUE NOW NOTIFICATION - With action buttons
+  // ⭐ 2. DUE NOW NOTIFICATION
   Future<void> scheduleTaskDueNow({
     required int id,
     required String taskId,
@@ -230,54 +347,53 @@ class NotificationService {
     }
 
     if (dueTime.isBefore(DateTime.now())) {
-      print('❌ Due time is in past: $dueTime');
+      print('⚠️ Due time is in past: $dueTime');
       return;
     }
 
     print('⏰ Scheduling DUE NOW notification for: $dueTime');
 
-    final tz.TZDateTime scheduledDate = tz.TZDateTime.from(dueTime, tz.local);
-
-    AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'task_reminder_channel',
-      'Task Reminders',
-      channelDescription: 'Notifications when tasks are due',
-      importance: Importance.max,
-      priority: Priority.high,
-      enableVibration: true,
-      playSound: true,
-      timeoutAfter: 60000,
-      fullScreenIntent: true,
-      visibility: NotificationVisibility.public,
-      icon: '@mipmap/ic_launcher',
-      color: Color(0xFFFF9800),
-      // ⭐ ACTION BUTTONS
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          'complete',
-          'Mark Complete',
-          showsUserInterface: true,
-          cancelNotification: true,
-        ),
-        AndroidNotificationAction(
-          'snooze',
-          'Snooze 10min',
-          showsUserInterface: false,
-          cancelNotification: false,
-        ),
-      ],
-    );
-
-    NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      ),
-    );
-
     try {
+      final tz.TZDateTime scheduledDate = tz.TZDateTime.from(dueTime, tz.local);
+
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'task_reminder_channel',
+        'Task Reminders',
+        channelDescription: 'Notifications when tasks are due',
+        importance: Importance.max,
+        priority: Priority.high,
+        enableVibration: true,
+        playSound: true,
+        timeoutAfter: 60000,
+        fullScreenIntent: true,
+        visibility: NotificationVisibility.public,
+        icon: '@mipmap/ic_launcher',
+        color: const Color(0xFFFF9800),
+        actions: <AndroidNotificationAction>[
+          const AndroidNotificationAction(
+            'complete',
+            'Mark Complete',
+            showsUserInterface: true,
+            cancelNotification: true,
+          ),
+          const AndroidNotificationAction(
+            'snooze',
+            'Snooze 10min',
+            showsUserInterface: false,
+            cancelNotification: false,
+          ),
+        ],
+      );
+
+      final NotificationDetails details = NotificationDetails(
+        android: androidDetails,
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      );
+
       await _notifications.zonedSchedule(
         id + 5000,
         '⏰ DUE NOW: $title',
@@ -285,13 +401,14 @@ class NotificationService {
         scheduledDate,
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+        UILocalNotificationDateInterpretation.absoluteTime,
         payload: taskId,
       );
 
       print('✅ DUE NOW notification scheduled! ID: ${id + 5000}');
     } catch (e) {
       print('❌ Scheduling error: $e');
-      rethrow;
     }
   }
 
@@ -308,7 +425,7 @@ class NotificationService {
 
     print('❌ Showing MISSED TASK notification (ID: $id)');
 
-    AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'task_missed_channel',
       'Missed Tasks',
       channelDescription: 'Notifications for missed tasks',
@@ -319,13 +436,13 @@ class NotificationService {
       fullScreenIntent: true,
       visibility: NotificationVisibility.public,
       icon: '@mipmap/ic_launcher',
-      color: Color(0xFFFF0000),
-      styleInformation: BigTextStyleInformation(''),
+      color: const Color(0xFFFF0000),
+      styleInformation: const BigTextStyleInformation(''),
     );
 
-    NotificationDetails details = NotificationDetails(
+    final NotificationDetails details = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(
+      iOS: const DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
@@ -342,7 +459,6 @@ class NotificationService {
       print('✅ MISSED notification sent (ID: $id)');
     } catch (e) {
       print('❌ Error showing missed notification: $e');
-      rethrow;
     }
   }
 
@@ -359,7 +475,7 @@ class NotificationService {
 
     print('✅ Showing TASK COMPLETED notification (ID: $id)');
 
-    AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'task_completed_channel',
       'Task Completed',
       channelDescription: 'Notifications when tasks are completed',
@@ -368,12 +484,12 @@ class NotificationService {
       enableVibration: false,
       playSound: true,
       icon: '@mipmap/ic_launcher',
-      color: Color(0xFF19E619),
+      color: const Color(0xFF19E619),
     );
 
-    NotificationDetails details = NotificationDetails(
+    final NotificationDetails details = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(
+      iOS: const DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: false,
         presentSound: true,
@@ -390,7 +506,6 @@ class NotificationService {
       print('✅ COMPLETED notification sent (ID: $id)');
     } catch (e) {
       print('❌ Error showing completed notification: $e');
-      rethrow;
     }
   }
 
@@ -411,7 +526,7 @@ class NotificationService {
     final String formattedDate = _formatDateTime(newDueDate);
     final String body = 'Your $repeatType task has been rescheduled to $formattedDate';
 
-    AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'task_rescheduled_channel',
       'Task Rescheduled',
       channelDescription: 'Notifications when repeated tasks are rescheduled',
@@ -420,12 +535,12 @@ class NotificationService {
       enableVibration: true,
       playSound: true,
       icon: '@mipmap/ic_launcher',
-      color: Color(0xFF19E619),
+      color: const Color(0xFF19E619),
     );
 
-    NotificationDetails details = NotificationDetails(
+    final NotificationDetails details = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(
+      iOS: const DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
@@ -442,7 +557,6 @@ class NotificationService {
       print('✅ RESCHEDULED notification sent (ID: $id)');
     } catch (e) {
       print('❌ Error showing rescheduled notification: $e');
-      rethrow;
     }
   }
 
@@ -459,7 +573,7 @@ class NotificationService {
 
     print('📢 Showing immediate TEST notification (ID: $id)');
 
-    AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'task_reminder_channel',
       'Task Reminders',
       channelDescription: 'Notifications for upcoming tasks',
@@ -471,9 +585,9 @@ class NotificationService {
       visibility: NotificationVisibility.public,
     );
 
-    NotificationDetails details = NotificationDetails(
+    final NotificationDetails details = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(
+      iOS: const DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
@@ -490,7 +604,6 @@ class NotificationService {
       print('✅ TEST notification sent (ID: $id)');
     } catch (e) {
       print('❌ Error showing test notification: $e');
-      rethrow;
     }
   }
 
@@ -528,11 +641,10 @@ class NotificationService {
     }
   }
 
-  // ⭐ Cancel task notification (both reminder AND due now)
   Future<void> cancelTaskNotifications(int baseId) async {
     if (!_isInitialized) return;
-    await _notifications.cancel(baseId); // Reminder
-    await _notifications.cancel(baseId + 5000); // Due Now
+    await _notifications.cancel(baseId);
+    await _notifications.cancel(baseId + 5000);
     print('🗑️ Cancelled notifications for task (Base ID: $baseId)');
   }
 
