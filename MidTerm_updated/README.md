@@ -13,6 +13,8 @@
 8. [Background Tasks](#8-background-tasks)
 9. [Troubleshooting](#9-troubleshooting)
 10. [Code Examples](#10-code-examples)
+11. App Screenshots
+12. App Video Demo
 
 ---
 
@@ -756,3 +758,6 @@ Dashboard Ready
 
 ▶ **Watch Full App Demo Video**  
 https://drive.google.com/file/d/1FZ9hWCQ8QeCjKzX8Adyd31HGXzL0T-Sy/view?usp=drivesdk
+
+
+
