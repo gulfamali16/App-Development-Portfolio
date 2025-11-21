@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'dart:ui';
+import 'dart:typed_data';
 import 'database_helper.dart' as db;
 
 class NotificationService {
@@ -12,7 +13,6 @@ class NotificationService {
   late FlutterLocalNotificationsPlugin _notifications;
   bool _isInitialized = false;
 
-  // ⭐ Callback for handling notification actions
   static Function(String taskId, String action)? onNotificationAction;
 
   bool get isInitialized => _isInitialized;
@@ -26,10 +26,8 @@ class NotificationService {
     print('🔧 Initializing notification service...');
 
     try {
-      // Initialize timezone with auto-detection
       tz.initializeTimeZones();
 
-      // ⭐ AUTO-DETECT TIMEZONE
       final String timeZoneName = await _getDeviceTimeZone();
       try {
         tz.setLocalLocation(tz.getLocation(timeZoneName));
@@ -76,28 +74,25 @@ class NotificationService {
     }
   }
 
-  // ⭐ AUTO-DETECT DEVICE TIMEZONE
   Future<String> _getDeviceTimeZone() async {
     try {
       final DateTime now = DateTime.now();
       final int offsetInMinutes = now.timeZoneOffset.inMinutes;
 
-      // Map common offsets to timezone names
-      if (offsetInMinutes == 300) return 'Asia/Karachi';      // UTC+5
-      if (offsetInMinutes == 330) return 'Asia/Kolkata';      // UTC+5:30
-      if (offsetInMinutes == 480) return 'Asia/Shanghai';     // UTC+8
-      if (offsetInMinutes == 0) return 'UTC';                 // UTC
-      if (offsetInMinutes == -300) return 'America/New_York'; // UTC-5
-      if (offsetInMinutes == -480) return 'America/Los_Angeles'; // UTC-8
+      if (offsetInMinutes == 300) return 'Asia/Karachi';
+      if (offsetInMinutes == 330) return 'Asia/Kolkata';
+      if (offsetInMinutes == 480) return 'Asia/Shanghai';
+      if (offsetInMinutes == 0) return 'UTC';
+      if (offsetInMinutes == -300) return 'America/New_York';
+      if (offsetInMinutes == -480) return 'America/Los_Angeles';
 
-      return 'UTC'; // Default fallback
+      return 'UTC';
     } catch (e) {
       print('⚠️ Could not detect timezone: $e');
       return 'UTC';
     }
   }
 
-  // ⭐ IMPROVED: Handle notification actions (Complete/Snooze)
   void _handleNotificationAction(NotificationResponse response) async {
     final actionId = response.actionId;
     final taskId = response.payload;
@@ -113,20 +108,16 @@ class NotificationService {
       if (actionId == 'complete') {
         print('✅ Completing task from notification: $taskId');
 
-        // Mark task as completed
         await dbHelper.toggleTaskCompletion(taskId, true);
 
-        // Show completion confirmation
         await showTaskCompletedNotification(
           id: taskId.hashCode + 30000,
           title: 'Task Completed',
           body: 'Great job! Task marked as complete.',
         );
 
-        // Cancel remaining notifications for this task
         await cancelTaskNotifications(taskId.hashCode);
 
-        // Notify app if callback is set
         if (onNotificationAction != null) {
           onNotificationAction!(taskId, 'complete');
         }
@@ -134,21 +125,18 @@ class NotificationService {
       } else if (actionId == 'snooze') {
         print('⏰ Snoozing task: $taskId');
 
-        // Get the task
         final tasks = await dbHelper.getAllTasks();
         final task = tasks.firstWhere(
               (t) => t.id == taskId,
           orElse: () => throw Exception('Task not found'),
         );
 
-        // Cancel current notifications
         await cancelTaskNotifications(taskId.hashCode);
 
-        // Reschedule for 10 minutes later
         final newDueTime = DateTime.now().add(const Duration(minutes: 10));
 
         await scheduleTaskReminder(
-          id: taskId.hashCode,
+          id: taskId.hashCode + 60000,
           taskId: taskId,
           title: '⏰ Snoozed: ${task.title}',
           body: task.description.isNotEmpty
@@ -158,14 +146,12 @@ class NotificationService {
           minutesBefore: 0,
         );
 
-        // Show snooze confirmation
         await showImmediateNotification(
           id: taskId.hashCode + 40000,
           title: '⏰ Task Snoozed',
           body: 'Reminder set for 10 minutes from now',
         );
 
-        // Notify app if callback is set
         if (onNotificationAction != null) {
           onNotificationAction!(taskId, 'snooze');
         }
@@ -182,7 +168,6 @@ class NotificationService {
 
     if (androidPlugin == null) return;
 
-    // HIGH PRIORITY CHANNEL for reminders
     const AndroidNotificationChannel reminderChannel = AndroidNotificationChannel(
       'task_reminder_channel',
       'Task Reminders',
@@ -195,7 +180,6 @@ class NotificationService {
       ledColor: Color(0xFF19E619),
     );
 
-    // CRITICAL CHANNEL for missed tasks
     const AndroidNotificationChannel missedChannel = AndroidNotificationChannel(
       'task_missed_channel',
       'Missed Tasks',
@@ -234,7 +218,6 @@ class NotificationService {
     print("✅ All notification channels created!");
   }
 
-  // ⭐ 1. TASK REMINDER - With action buttons
   Future<void> scheduleTaskReminder({
     required int id,
     required String taskId,
@@ -248,20 +231,31 @@ class NotificationService {
       return;
     }
 
-    final notificationTime =
-    scheduledTime.subtract(Duration(minutes: minutesBefore));
+    final now = DateTime.now();
+    final reminderTime = scheduledTime.subtract(Duration(minutes: minutesBefore));
 
-    if (notificationTime.isBefore(DateTime.now())) {
-      print('⚠️ Notification time is in past: $notificationTime');
+    print('📅 Due time: $scheduledTime');
+    print('⏰ Reminder time: $reminderTime ($minutesBefore min before)');
+    print('🕐 Current time: $now');
+
+    if (reminderTime.isBefore(now)) {
+      print('⚠️ Reminder time already passed. Skipping reminder.');
       return;
     }
 
-    print('🕐 Scheduling REMINDER for: $notificationTime');
+    if (scheduledTime.isBefore(now)) {
+      print('⚠️ Task time is in past, skipping');
+      return;
+    }
 
     try {
-      final tz.TZDateTime scheduledDate =
-      tz.TZDateTime.from(notificationTime, tz.local);
+      final tz.TZDateTime scheduledDate = tz.TZDateTime.from(reminderTime, tz.local);
 
+      print('📤 Scheduling reminder notification...');
+      print('   ID: $id');
+      print('   Time: $scheduledDate');
+
+      // ⭐ CRASH FIX: Remove fullScreenIntent and reduce timeout
       final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         'task_reminder_channel',
         'Task Reminders',
@@ -270,21 +264,24 @@ class NotificationService {
         priority: Priority.high,
         enableVibration: true,
         playSound: true,
-        timeoutAfter: 60000,
-        fullScreenIntent: true,
         visibility: NotificationVisibility.public,
         icon: '@mipmap/ic_launcher',
         color: const Color(0xFF19E619),
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: '⏰ Reminder: $title',
+          summaryText: 'Task Manager',
+        ),
         actions: <AndroidNotificationAction>[
           const AndroidNotificationAction(
             'complete',
-            'Mark Complete',
+            '✅ Complete',
             showsUserInterface: true,
             cancelNotification: true,
           ),
           const AndroidNotificationAction(
             'snooze',
-            'Snooze 10min',
+            '⏰ Snooze 10min',
             showsUserInterface: false,
             cancelNotification: false,
           ),
@@ -302,7 +299,7 @@ class NotificationService {
 
       await _notifications.zonedSchedule(
         id,
-        '⏰ $title',
+        '⏰ Reminder: $title',
         body,
         scheduledDate,
         details,
@@ -312,28 +309,12 @@ class NotificationService {
         payload: taskId,
       );
 
-      print('✅ REMINDER scheduled! ID: $id for $scheduledDate');
+      print('✅ REMINDER scheduled successfully!');
     } catch (e) {
       print('❌ Scheduling error: $e');
-      // Retry mechanism
-      await Future.delayed(const Duration(seconds: 2));
-      print('🔄 Retrying notification schedule...');
-      try {
-        await scheduleTaskReminder(
-          id: id,
-          taskId: taskId,
-          title: title,
-          body: body,
-          scheduledTime: scheduledTime,
-          minutesBefore: minutesBefore,
-        );
-      } catch (retryError) {
-        print('❌ Retry failed: $retryError');
-      }
     }
   }
 
-  // ⭐ 2. DUE NOW NOTIFICATION
   Future<void> scheduleTaskDueNow({
     required int id,
     required String taskId,
@@ -346,39 +327,48 @@ class NotificationService {
       return;
     }
 
-    if (dueTime.isBefore(DateTime.now())) {
+    final now = DateTime.now();
+
+    if (dueTime.isBefore(now)) {
       print('⚠️ Due time is in past: $dueTime');
       return;
     }
 
-    print('⏰ Scheduling DUE NOW notification for: $dueTime');
+    print('📤 Scheduling DUE NOW notification...');
+    print('   ID: ${id + 5000}');
+    print('   Time: $dueTime');
 
     try {
       final tz.TZDateTime scheduledDate = tz.TZDateTime.from(dueTime, tz.local);
 
+      // ⭐ CRASH FIX: Remove fullScreenIntent
       final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         'task_reminder_channel',
         'Task Reminders',
-        channelDescription: 'Notifications when tasks are due',
+        channelDescription: 'Task is due right now!',
         importance: Importance.max,
         priority: Priority.high,
         enableVibration: true,
         playSound: true,
-        timeoutAfter: 60000,
-        fullScreenIntent: true,
         visibility: NotificationVisibility.public,
         icon: '@mipmap/ic_launcher',
         color: const Color(0xFFFF9800),
+        vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+        styleInformation: BigTextStyleInformation(
+          body.isNotEmpty ? body : 'This task is due right now!',
+          contentTitle: '🔔 DUE NOW: $title',
+          summaryText: 'Task Manager',
+        ),
         actions: <AndroidNotificationAction>[
           const AndroidNotificationAction(
             'complete',
-            'Mark Complete',
+            '✅ Mark Done',
             showsUserInterface: true,
             cancelNotification: true,
           ),
           const AndroidNotificationAction(
             'snooze',
-            'Snooze 10min',
+            '⏰ +10 min',
             showsUserInterface: false,
             cancelNotification: false,
           ),
@@ -396,7 +386,7 @@ class NotificationService {
 
       await _notifications.zonedSchedule(
         id + 5000,
-        '⏰ DUE NOW: $title',
+        '🔔 DUE NOW: $title',
         body.isNotEmpty ? body : 'This task is due right now!',
         scheduledDate,
         details,
@@ -406,13 +396,12 @@ class NotificationService {
         payload: taskId,
       );
 
-      print('✅ DUE NOW notification scheduled! ID: ${id + 5000}');
+      print('✅ DUE NOW notification scheduled successfully!');
     } catch (e) {
-      print('❌ Scheduling error: $e');
+      print('❌ DUE NOW scheduling error: $e');
     }
   }
 
-  // ⭐ 3. MISSED TASK NOTIFICATION
   Future<void> showMissedTaskNotification({
     required int id,
     required String title,
@@ -425,19 +414,32 @@ class NotificationService {
 
     print('❌ Showing MISSED TASK notification (ID: $id)');
 
+    // ⭐ CRASH FIX: Remove fullScreenIntent from missed notifications too
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'task_missed_channel',
       'Missed Tasks',
-      channelDescription: 'Notifications for missed tasks',
+      channelDescription: 'You missed this task!',
       importance: Importance.max,
       priority: Priority.high,
       enableVibration: true,
       playSound: true,
-      fullScreenIntent: true,
       visibility: NotificationVisibility.public,
       icon: '@mipmap/ic_launcher',
       color: const Color(0xFFFF0000),
-      styleInformation: const BigTextStyleInformation(''),
+      vibrationPattern: Int64List.fromList([0, 500, 300, 500, 300, 500]),
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: '❌ Missed: $title',
+        summaryText: 'Task Manager',
+      ),
+      actions: <AndroidNotificationAction>[
+        const AndroidNotificationAction(
+          'complete',
+          '✅ Complete Now',
+          showsUserInterface: true,
+          cancelNotification: true,
+        ),
+      ],
     );
 
     final NotificationDetails details = NotificationDetails(
@@ -455,6 +457,7 @@ class NotificationService {
         '❌ Missed: $title',
         body,
         details,
+        payload: id.toString(),
       );
       print('✅ MISSED notification sent (ID: $id)');
     } catch (e) {
@@ -462,29 +465,31 @@ class NotificationService {
     }
   }
 
-  // ⭐ 4. TASK COMPLETED NOTIFICATION
   Future<void> showTaskCompletedNotification({
     required int id,
     required String title,
     String? body,
   }) async {
-    if (!_isInitialized) {
-      print('❌ Cannot show notification: Service not initialized');
-      return;
-    }
+    if (!_isInitialized) return;
 
     print('✅ Showing TASK COMPLETED notification (ID: $id)');
 
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'task_completed_channel',
       'Task Completed',
-      channelDescription: 'Notifications when tasks are completed',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-      enableVibration: false,
+      channelDescription: 'Celebration for completed tasks',
+      importance: Importance.high,
+      priority: Priority.high,
+      enableVibration: true,
       playSound: true,
       icon: '@mipmap/ic_launcher',
       color: const Color(0xFF19E619),
+      vibrationPattern: Int64List.fromList([0, 200, 100, 200]),
+      styleInformation: const BigTextStyleInformation(
+        '🎉 Great job! Task completed successfully.',
+        contentTitle: '✅ Task Completed',
+        summaryText: 'Task Manager',
+      ),
     );
 
     final NotificationDetails details = NotificationDetails(
@@ -500,7 +505,7 @@ class NotificationService {
       await _notifications.show(
         id,
         '✅ Completed: $title',
-        body ?? 'Great job! Task completed successfully.',
+        body ?? '🎉 Great job! Task completed successfully.',
         details,
       );
       print('✅ COMPLETED notification sent (ID: $id)');
@@ -509,33 +514,34 @@ class NotificationService {
     }
   }
 
-  // ⭐ 5. TASK RESCHEDULED NOTIFICATION
   Future<void> showTaskRescheduledNotification({
     required int id,
     required String title,
     required DateTime newDueDate,
     required String repeatType,
   }) async {
-    if (!_isInitialized) {
-      print('❌ Cannot show notification: Service not initialized');
-      return;
-    }
+    if (!_isInitialized) return;
 
     print('🔄 Showing TASK RESCHEDULED notification (ID: $id)');
 
     final String formattedDate = _formatDateTime(newDueDate);
-    final String body = 'Your $repeatType task has been rescheduled to $formattedDate';
+    final String body = 'Your $repeatType task rescheduled to $formattedDate';
 
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'task_rescheduled_channel',
       'Task Rescheduled',
-      channelDescription: 'Notifications when repeated tasks are rescheduled',
+      channelDescription: 'Repeated task rescheduled',
       importance: Importance.high,
       priority: Priority.high,
       enableVibration: true,
       playSound: true,
       icon: '@mipmap/ic_launcher',
       color: const Color(0xFF19E619),
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: '🔄 Rescheduled: $title',
+        summaryText: 'Task Manager',
+      ),
     );
 
     final NotificationDetails details = NotificationDetails(
@@ -560,29 +566,47 @@ class NotificationService {
     }
   }
 
-  // ⭐ TEST: Show immediate notification
   Future<void> showImmediateNotification({
     required int id,
     required String title,
     required String body,
+    String? taskId,
+    bool withActions = false,
   }) async {
-    if (!_isInitialized) {
-      print('❌ Cannot show notification: Service not initialized');
-      return;
-    }
+    if (!_isInitialized) return;
 
-    print('📢 Showing immediate TEST notification (ID: $id)');
+    print('📢 Showing immediate notification (ID: $id)');
 
+    // ⭐ CRASH FIX: Remove fullScreenIntent from immediate notifications
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'task_reminder_channel',
       'Task Reminders',
-      channelDescription: 'Notifications for upcoming tasks',
+      channelDescription: 'Immediate notification',
       importance: Importance.max,
       priority: Priority.high,
       enableVibration: true,
       playSound: true,
-      fullScreenIntent: true,
       visibility: NotificationVisibility.public,
+      color: const Color(0xFF19E619),
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'Task Manager',
+      ),
+      actions: withActions ? <AndroidNotificationAction>[
+        const AndroidNotificationAction(
+          'complete',
+          '✅ Complete',
+          showsUserInterface: true,
+          cancelNotification: true,
+        ),
+        const AndroidNotificationAction(
+          'snooze',
+          '⏰ Snooze 10min',
+          showsUserInterface: false,
+          cancelNotification: false,
+        ),
+      ] : null,
     );
 
     final NotificationDetails details = NotificationDetails(
@@ -600,10 +624,11 @@ class NotificationService {
         title,
         body,
         details,
+        payload: taskId,
       );
-      print('✅ TEST notification sent (ID: $id)');
+      print('✅ Immediate notification sent (ID: $id)');
     } catch (e) {
-      print('❌ Error showing test notification: $e');
+      print('❌ Error: $e');
     }
   }
 
@@ -625,19 +650,21 @@ class NotificationService {
   }
 
   Future<void> printPendingNotifications() async {
-    if (!_isInitialized) {
-      print('❌ Cannot check pending notifications: Service not initialized');
-      return;
-    }
+    if (!_isInitialized) return;
 
     try {
       final pending = await _notifications.pendingNotificationRequests();
-      print('📋 Pending notifications: ${pending.length}');
+      print('📋 ===== PENDING NOTIFICATIONS =====');
+      print('📋 Total: ${pending.length}');
       for (var notif in pending) {
-        print('  - ID: ${notif.id}, Title: ${notif.title}, Body: ${notif.body}');
+        print('  📌 ID: ${notif.id}');
+        print('     Title: ${notif.title}');
+        print('     Body: ${notif.body}');
+        print('  ---');
       }
+      print('📋 ==================================');
     } catch (e) {
-      print('❌ Error getting pending notifications: $e');
+      print('❌ Error: $e');
     }
   }
 
@@ -645,18 +672,17 @@ class NotificationService {
     if (!_isInitialized) return;
     await _notifications.cancel(baseId);
     await _notifications.cancel(baseId + 5000);
-    print('🗑️ Cancelled notifications for task (Base ID: $baseId)');
+    await _notifications.cancel(baseId + 60000);
+    print('🗑️ Cancelled all notifications for task (Base ID: $baseId)');
   }
 
   Future<void> cancelNotification(int id) async {
     if (!_isInitialized) return;
     await _notifications.cancel(id);
-    print('🗑️ Notification cancelled (ID: $id)');
   }
 
   Future<void> cancelAllNotifications() async {
     if (!_isInitialized) return;
     await _notifications.cancelAll();
-    print('🗑️ All notifications cancelled');
   }
 }

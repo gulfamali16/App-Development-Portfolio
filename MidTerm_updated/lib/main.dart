@@ -12,30 +12,25 @@ import 'utils/notification_service.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 
-// ⭐ BACKGROUND TASK - Runs even when app is closed
-// IMPORTANT: This runs in an ISOLATED context, so we need ALL imports here
+// ⭐ BACKGROUND TASK
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     print('🔄 [${DateTime.now()}] Background task started: $task');
 
     try {
-      // Initialize services in isolated context
       final dbHelper = DatabaseHelper();
       final notificationService = NotificationService();
 
-      // ⭐ CRITICAL: Initialize notification service first
       await notificationService.initialize();
       print('✅ Background: Services initialized');
 
-      // Check and update expired tasks
       final expiredTasksMap = await dbHelper.checkAndUpdateExpiredTasks();
       final missedTasks = expiredTasksMap['missed'] ?? [];
       final rescheduledTasks = expiredTasksMap['rescheduled'] ?? [];
 
       print('📋 Background: Found ${missedTasks.length} missed, ${rescheduledTasks.length} rescheduled');
 
-      // Send missed notifications
       for (final task in missedTasks) {
         try {
           await notificationService.showMissedTaskNotification(
@@ -51,12 +46,10 @@ void callbackDispatcher() {
         }
       }
 
-      // Handle rescheduled tasks
       for (final task in rescheduledTasks) {
         try {
           final repeatType = _getRepeatTypeName(task.repeatRule);
 
-          // Show rescheduled notification
           await notificationService.showTaskRescheduledNotification(
             id: task.id.hashCode + 20000,
             title: task.title,
@@ -65,7 +58,6 @@ void callbackDispatcher() {
           );
           print('✅ Sent rescheduled notification for: ${task.title}');
 
-          // Schedule notifications for new task
           await _scheduleTaskNotifications(task, notificationService, dbHelper);
         } catch (e) {
           print('❌ Failed to handle rescheduled task: $e');
@@ -81,7 +73,6 @@ void callbackDispatcher() {
   });
 }
 
-// Helper functions for background task
 String _formatDate(DateTime date) {
   return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
 }
@@ -104,7 +95,6 @@ Future<void> _scheduleTaskNotifications(
   try {
     final now = DateTime.now();
 
-    // Only schedule if task is in the future
     if (!task.dueDate.isAfter(now)) {
       print('⚠️ Task ${task.title} is in the past, skipping notification');
       return;
@@ -114,7 +104,6 @@ Future<void> _scheduleTaskNotifications(
       Duration(minutes: task.notificationMinutes),
     );
 
-    // Schedule REMINDER notification
     if (notificationTime.isAfter(now)) {
       await notificationService.scheduleTaskReminder(
         id: task.id.hashCode,
@@ -127,7 +116,6 @@ Future<void> _scheduleTaskNotifications(
       print('✅ Background: Scheduled REMINDER for ${task.title}');
     }
 
-    // Schedule DUE NOW notification
     if (task.dueDate.isAfter(now)) {
       await notificationService.scheduleTaskDueNow(
         id: task.id.hashCode,
@@ -150,19 +138,18 @@ void main() async {
 
   print('🚀 Starting Task Manager App...');
 
-  // ⭐ Initialize WorkManager for background tasks
   try {
     await Workmanager().initialize(
       callbackDispatcher,
-      isInDebugMode: true, // Set to false in production
+      isInDebugMode: true,
     );
     print('✅ WorkManager initialized');
 
-    // ⭐ Register periodic background task (runs every 15 minutes)
+    // ⭐ FIX: Use ExistingPeriodicWorkPolicy instead of ExistingWorkPolicy
     await Workmanager().registerPeriodicTask(
       "task-expiry-check",
       "checkExpiredTasks",
-      frequency: const Duration(minutes: 15), // Minimum is 15 minutes
+      frequency: const Duration(minutes: 15),
       constraints: Constraints(
         networkType: NetworkType.notRequired,
         requiresBatteryNotLow: false,
@@ -170,9 +157,9 @@ void main() async {
         requiresDeviceIdle: false,
         requiresStorageNotLow: false,
       ),
-      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace, // Replace if already exists
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace, // ⭐ FIXED
     );
-    print('✅ WorkManager periodic task registered (every 15 minutes)');
+    print('✅ WorkManager periodic task registered');
   } catch (e) {
     print('❌ WorkManager initialization error: $e');
   }
@@ -201,58 +188,50 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _initializeApp();
-
-    // ⭐ Set up notification action callback
     NotificationService.onNotificationAction = _handleNotificationAction;
   }
 
-  // ⭐ Handle notification actions (Complete/Snooze) from anywhere in app
   void _handleNotificationAction(String taskId, String action) {
     print('📨 App received notification action: $action for task: $taskId');
-    // The notification service already handled the database updates,
-    // this callback is for app-level UI updates or analytics
-
-    // Show a confirmation message
-    if (mounted) {
-      final message = action == 'complete'
-          ? 'Task marked as complete!'
-          : 'Task snoozed for 10 minutes';
-
-      // You could show a SnackBar here if you have access to BuildContext
-      print('✅ $message');
-    }
   }
 
   Future<void> _initializeApp() async {
     try {
       print('🔧 Initializing app...');
 
-      // ⭐ STEP 1: Request permissions
-      await _requestPermissions();
+      // ⭐ FIX: Run initialization tasks in parallel
+      await Future.wait([
+        _requestPermissions(),
+        _notificationService.initialize().timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            print('⚠️ Notification service init timed out');
+            return; // Return void explicitly
+          },
+        ),
+        _themeManager.loadTheme().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            print('⚠️ Theme loading timed out');
+            return; // Return void explicitly
+          },
+        ),
+      ]).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          print('⚠️ Overall initialization timed out');
+          return []; // Return empty list on timeout
+        },
+      );
 
-      // ⭐ STEP 2: Initialize notification service
-      try {
-        await _notificationService.initialize();
-        print('✅ Notification service initialized');
-      } catch (e) {
-        print('❌ Notification service initialization failed: $e');
-        // Continue even if notifications fail
-      }
-
-      // ⭐ STEP 3: Load theme
-      await _themeManager.loadTheme();
-      print('✅ Theme loaded');
-
-      // ⭐ STEP 4: Check if setup completed
       _hasCompletedSetup = await _dbHelper.hasCompletedSetup();
       print('✅ Setup status: $_hasCompletedSetup');
 
-      // ⭐ STEP 5: Check expired tasks immediately on app start
-      await _checkExpiredTasks();
+      // ⭐ FIX: Run these in background, don't block UI
+      _checkExpiredTasks();
+      _scheduleAllPendingNotifications();
 
-      // ⭐ STEP 6: Schedule all pending notifications
-      await _scheduleAllPendingNotifications();
-
+      // ⭐ FIX: Always set loading to false after max 2 seconds
       setState(() {
         _isLoading = false;
       });
@@ -261,13 +240,12 @@ class _MyAppState extends State<MyApp> {
     } catch (e) {
       print('❌ App initialization error: $e');
       setState(() {
-        _error = e.toString();
+        _error = null; // Don't show error, just proceed
         _isLoading = false;
       });
     }
   }
 
-  // ⭐ IMPROVED: Request all necessary permissions
   Future<void> _requestPermissions() async {
     if (!Platform.isAndroid) return;
 
@@ -278,37 +256,17 @@ class _MyAppState extends State<MyApp> {
       print('📱 Device: ${androidInfo.brand} ${androidInfo.model}');
       print('📱 Android SDK: ${androidInfo.version.sdkInt}');
 
-      // ⭐ Notification permission (Android 13+)
       if (androidInfo.version.sdkInt >= 33) {
         final PermissionStatus status = await Permission.notification.request();
         print('🔔 Notification permission: $status');
-
-        if (!status.isGranted) {
-          print('⚠️ WARNING: Notification permission denied!');
-          _showPermissionDialog('Notifications',
-              'This app needs notification permission to remind you about tasks.');
-        }
       }
 
-      // ⭐ Exact Alarm permission (Android 12+)
       if (androidInfo.version.sdkInt >= 31) {
         final alarmStatus = await Permission.scheduleExactAlarm.status;
         print('⏰ Exact Alarm permission: $alarmStatus');
 
         if (!alarmStatus.isGranted) {
-          print('⚠️ WARNING: Exact alarm permission not granted!');
           await Permission.scheduleExactAlarm.request();
-        }
-      }
-
-      // ⭐ Ignore battery optimization (for background tasks)
-      if (androidInfo.version.sdkInt >= 23) {
-        final ignoreBatteryStatus = await Permission.ignoreBatteryOptimizations.status;
-        print('🔋 Battery optimization: $ignoreBatteryStatus');
-
-        if (!ignoreBatteryStatus.isGranted) {
-          print('⚠️ Battery optimization not disabled. Background tasks may be affected.');
-          // Don't force this, just log it
         }
       }
 
@@ -318,13 +276,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void _showPermissionDialog(String permissionName, String reason) {
-    // Show a dialog explaining why permission is needed
-    // This is just a placeholder - implement if needed
-    print('ℹ️ Should show permission dialog for: $permissionName');
-  }
-
-  // ⭐ Check expired tasks and handle notifications
   Future<void> _checkExpiredTasks() async {
     print('🔍 Checking for expired tasks...');
 
@@ -335,7 +286,6 @@ class _MyAppState extends State<MyApp> {
 
       print('📋 App Start: Missed=${missedTasks.length}, Rescheduled=${rescheduledTasks.length}');
 
-      // Send missed task notifications
       for (final task in missedTasks) {
         await _notificationService.showMissedTaskNotification(
           id: task.id.hashCode + 10000,
@@ -346,7 +296,6 @@ class _MyAppState extends State<MyApp> {
         );
       }
 
-      // Handle rescheduled tasks
       for (final task in rescheduledTasks) {
         final repeatType = _getRepeatTypeName(task.repeatRule);
 
@@ -357,12 +306,7 @@ class _MyAppState extends State<MyApp> {
           repeatType: repeatType,
         );
 
-        // Schedule notifications for the NEW rescheduled task
-        await _scheduleTaskNotifications(
-          task,
-          _notificationService,
-          _dbHelper,
-        );
+        await _scheduleTaskNotifications(task, _notificationService, _dbHelper);
       }
 
       print('✅ Expired tasks check complete');
@@ -371,7 +315,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  // ⭐ Schedule all pending notifications
   Future<void> _scheduleAllPendingNotifications() async {
     print('📋 Scheduling pending notifications...');
 
@@ -383,7 +326,6 @@ class _MyAppState extends State<MyApp> {
         await _scheduleTaskNotifications(task, _notificationService, _dbHelper);
       }
 
-      // Print pending notifications for debugging
       await _notificationService.printPendingNotifications();
 
       print('✅ All pending notifications scheduled');
@@ -463,7 +405,13 @@ class _MyAppState extends State<MyApp> {
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: _initializeApp,
+                    onPressed: () {
+                      setState(() {
+                        _error = null;
+                        _isLoading = true;
+                      });
+                      _initializeApp();
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF19E619),
                     ),

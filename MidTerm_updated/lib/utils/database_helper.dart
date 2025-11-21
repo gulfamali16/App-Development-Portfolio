@@ -2,16 +2,15 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:async';
 
-// Define enums and Task class FIRST, before DatabaseHelper
 enum Priority { low, medium, high }
 
 enum RepeatRule { none, daily, weekly, monthly }
 
 enum TaskStatus {
-  pending,    // Task is scheduled but not done
-  completed,  // User marked as completed
-  missed,     // Time passed and task wasn't completed
-  cancelled   // User cancelled the task
+  pending,
+  completed,
+  missed,
+  cancelled
 }
 
 class Task {
@@ -77,10 +76,9 @@ class Task {
     );
   }
 
-  // Create a copy of this task with new due date for repeat
   Task copyWithNewDueDate(DateTime newDueDate) {
     return Task(
-      id: DateTime.now().millisecondsSinceEpoch.toString(), // New unique ID
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
       description: description,
       dueDate: newDueDate,
@@ -88,10 +86,10 @@ class Task {
       repeatRule: repeatRule,
       notificationMinutes: notificationMinutes,
       subTasks: List.from(subTasks),
-      isCompleted: false, // New task is not completed
+      isCompleted: false,
       createdAt: DateTime.now(),
-      status: TaskStatus.pending, // New task is pending
-      notificationScheduled: false, // Needs new notification
+      status: TaskStatus.pending,
+      notificationScheduled: false,
     );
   }
 }
@@ -156,7 +154,6 @@ class DatabaseHelper {
     }
   }
 
-  // Check if user has completed initial setup
   Future<bool> hasCompletedSetup() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -168,7 +165,6 @@ class DatabaseHelper {
     return maps.isNotEmpty && maps.first['value'] == 'true';
   }
 
-  // Mark initial setup as completed
   Future<void> markSetupCompleted() async {
     final db = await database;
     await db.insert(
@@ -178,7 +174,6 @@ class DatabaseHelper {
     );
   }
 
-  // Task CRUD Operations
   Future<int> insertTask(Task task) async {
     final db = await database;
     return await db.insert('tasks', task.toMap());
@@ -227,7 +222,7 @@ class DatabaseHelper {
           whereArgs: [now, TaskStatus.missed.index, 0],
         );
         break;
-      default: // 'All'
+      default:
         maps = await db.query('tasks');
         break;
     }
@@ -280,20 +275,22 @@ class DatabaseHelper {
     }
   }
 
-  // ⭐ NEW: Check expired tasks and handle repeat logic
-  // Returns: List of (missedTasks, rescheduledTasks) for notification purposes
+  // ⭐ FIXED: Completed repeated tasks should NOT reschedule
   Future<Map<String, List<Task>>> checkAndUpdateExpiredTasks() async {
     final db = await database;
     final now = DateTime.now();
+    final oneMinuteAgo = now.subtract(const Duration(minutes: 1));
 
     final List<Task> missedTasks = [];
     final List<Task> rescheduledTasks = [];
 
-    // Get all pending tasks with expired due dates
+    // Get tasks that are:
+    // 1. Expired (due date < now - 1 minute)
+    // 2. Still pending (not completed, not already marked missed)
     final List<Map<String, dynamic>> maps = await db.query(
       'tasks',
       where: 'due_date < ? AND status = ? AND is_completed = ?',
-      whereArgs: [now.millisecondsSinceEpoch, TaskStatus.pending.index, 0],
+      whereArgs: [oneMinuteAgo.millisecondsSinceEpoch, TaskStatus.pending.index, 0],
     );
 
     final expiredTasks = List.generate(maps.length, (i) => Task.fromMap(maps[i]));
@@ -301,6 +298,12 @@ class DatabaseHelper {
     print('🔍 Found ${expiredTasks.length} expired tasks');
 
     for (final task in expiredTasks) {
+      // ⭐ CRITICAL FIX: Skip if task is completed
+      if (task.isCompleted || task.status == TaskStatus.completed) {
+        print('✅ Task "${task.title}" is completed, skipping...');
+        continue;
+      }
+
       // Mark current task as missed
       await db.update(
         'tasks',
@@ -312,14 +315,18 @@ class DatabaseHelper {
       print('❌ Task "${task.title}" marked as MISSED');
       missedTasks.add(task);
 
-      // If task has repeat rule, create new task for next occurrence
-      if (task.repeatRule != RepeatRule.none) {
+      // ⭐ FIXED LOGIC: Only reschedule if:
+      // 1. Task has repeat rule
+      // 2. Task is NOT completed
+      if (task.repeatRule != RepeatRule.none && !task.isCompleted) {
         final nextDueDate = _calculateNextDueDate(task.dueDate, task.repeatRule);
         final newTask = task.copyWithNewDueDate(nextDueDate);
 
         await insertTask(newTask);
         print('🔄 Created new repeated task for ${nextDueDate}');
         rescheduledTasks.add(newTask);
+      } else {
+        print('⏹️ Task is one-time or completed, NOT rescheduling');
       }
     }
 
@@ -329,7 +336,6 @@ class DatabaseHelper {
     };
   }
 
-  // ⭐ NEW: Calculate next due date based on repeat rule
   DateTime _calculateNextDueDate(DateTime currentDueDate, RepeatRule repeatRule) {
     switch (repeatRule) {
       case RepeatRule.daily:
@@ -339,7 +345,6 @@ class DatabaseHelper {
         return currentDueDate.add(const Duration(days: 7));
 
       case RepeatRule.monthly:
-      // Add one month (handle edge cases for month-end dates)
         int year = currentDueDate.year;
         int month = currentDueDate.month + 1;
         if (month > 12) {
@@ -347,7 +352,6 @@ class DatabaseHelper {
           year++;
         }
 
-        // Handle day overflow (e.g., Jan 31 -> Feb 28/29)
         int day = currentDueDate.day;
         final lastDayOfMonth = DateTime(year, month + 1, 0).day;
         if (day > lastDayOfMonth) {
@@ -368,7 +372,6 @@ class DatabaseHelper {
     }
   }
 
-  // Get expired tasks for notifications
   Future<List<Task>> getExpiredTasks() async {
     final db = await database;
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -382,7 +385,6 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) => Task.fromMap(maps[i]));
   }
 
-  // Mark notification as scheduled
   Future<void> markNotificationScheduled(String taskId) async {
     final db = await database;
     await db.update(
@@ -393,7 +395,6 @@ class DatabaseHelper {
     );
   }
 
-  // Get tasks that need notifications scheduled
   Future<List<Task>> getTasksNeedingNotification() async {
     final db = await database;
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -407,7 +408,6 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) => Task.fromMap(maps[i]));
   }
 
-  // Theme Settings
   Future<void> saveTheme(bool isDarkMode) async {
     final db = await database;
     await db.insert(
@@ -428,6 +428,6 @@ class DatabaseHelper {
     if (maps.isNotEmpty) {
       return maps.first['value'] == 'true';
     }
-    return false; // Default to light mode
+    return false;
   }
 }
