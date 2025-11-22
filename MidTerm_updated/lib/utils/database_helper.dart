@@ -26,6 +26,7 @@ class Task {
   final DateTime createdAt;
   TaskStatus status;
   bool notificationScheduled;
+  bool hasBeenRescheduled; // ⭐ NEW: Track if already rescheduled
 
   Task({
     required this.id,
@@ -40,6 +41,7 @@ class Task {
     required this.createdAt,
     this.status = TaskStatus.pending,
     this.notificationScheduled = false,
+    this.hasBeenRescheduled = false, // ⭐ NEW
   });
 
   Map<String, dynamic> toMap() {
@@ -56,6 +58,7 @@ class Task {
       'status': status.index,
       'created_at': createdAt.millisecondsSinceEpoch,
       'notification_scheduled': notificationScheduled ? 1 : 0,
+      'has_been_rescheduled': hasBeenRescheduled ? 1 : 0, // ⭐ NEW
     };
   }
 
@@ -73,6 +76,7 @@ class Task {
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at']),
       status: TaskStatus.values[map.containsKey('status') ? map['status'] : 0],
       notificationScheduled: map.containsKey('notification_scheduled') ? map['notification_scheduled'] == 1 : false,
+      hasBeenRescheduled: map.containsKey('has_been_rescheduled') ? map['has_been_rescheduled'] == 1 : false, // ⭐ NEW
     );
   }
 
@@ -90,6 +94,7 @@ class Task {
       createdAt: DateTime.now(),
       status: TaskStatus.pending,
       notificationScheduled: false,
+      hasBeenRescheduled: false, // ⭐ NEW: New task hasn't been rescheduled yet
     );
   }
 }
@@ -111,7 +116,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'task_manager.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3, // ⭐ CHANGED: Version 3 for new column
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
@@ -131,7 +136,8 @@ class DatabaseHelper {
         is_completed INTEGER NOT NULL,
         status INTEGER NOT NULL,
         created_at INTEGER NOT NULL,
-        notification_scheduled INTEGER NOT NULL DEFAULT 0
+        notification_scheduled INTEGER NOT NULL DEFAULT 0,
+        has_been_rescheduled INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -151,6 +157,14 @@ class DatabaseHelper {
       await db.execute('''
         ALTER TABLE tasks ADD COLUMN notification_scheduled INTEGER NOT NULL DEFAULT 0
       ''');
+    }
+
+    // ⭐ NEW: Add column for version 3
+    if (oldVersion < 3) {
+      await db.execute('''
+        ALTER TABLE tasks ADD COLUMN has_been_rescheduled INTEGER NOT NULL DEFAULT 0
+      ''');
+      print('✅ Added has_been_rescheduled column');
     }
   }
 
@@ -249,12 +263,12 @@ class DatabaseHelper {
     );
   }
 
-  // ⭐ CORRECT LOGIC: Only reschedule if completed ON TIME (before it becomes missed)
+  // ⭐ FIXED: Prevent duplicate rescheduling
   Future<int> toggleTaskCompletion(String id, bool isCompleted) async {
     final db = await database;
 
     if (isCompleted) {
-      // First, get the task to check if it's repeated
+      // Get the task to check if it's repeated
       final tasks = await getAllTasks();
       final task = tasks.firstWhere((t) => t.id == id, orElse: () => throw Exception('Task not found'));
 
@@ -269,26 +283,40 @@ class DatabaseHelper {
         whereArgs: [id],
       );
 
-      // ⭐ CORRECT LOGIC: Only reschedule if:
+      // ⭐ CRITICAL FIX: Only reschedule if:
       // 1. Task has repeat rule
-      // 2. Task status is PENDING (not already missed)
-      // If already missed, it was rescheduled before, so DON'T reschedule again
-      if (task.repeatRule != RepeatRule.none && task.status == TaskStatus.pending) {
+      // 2. Task has NOT been rescheduled before (prevents duplicates!)
+      if (task.repeatRule != RepeatRule.none && !task.hasBeenRescheduled) {
         final nextDueDate = _calculateNextDueDate(task.dueDate, task.repeatRule);
         final newTask = task.copyWithNewDueDate(nextDueDate);
         await insertTask(newTask);
-        print('🔄 Completed ON TIME - Created new task for ${nextDueDate}');
-      } else if (task.status == TaskStatus.missed) {
-        print('⏹️ Task was already missed and rescheduled, NOT creating duplicate');
+
+        // ⭐ CRITICAL: Mark this task as already rescheduled
+        await db.update(
+          'tasks',
+          {'has_been_rescheduled': 1},
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+
+        print('🔄 Task completed - Created new instance for $nextDueDate');
+        print('✅ Marked original task as rescheduled to prevent duplicates');
+      } else if (task.hasBeenRescheduled) {
+        print('⏹️ Task already rescheduled before, NOT creating duplicate');
+      } else {
+        print('⏹️ One-time task, no rescheduling needed');
       }
 
       return 1;
     } else {
+      // ⭐ When uncompleting, do NOT reset has_been_rescheduled
+      // This prevents re-rescheduling if user completes again
       return await db.update(
         'tasks',
         {
           'is_completed': 0,
           'status': TaskStatus.pending.index,
+          // ⭐ IMPORTANT: Keep has_been_rescheduled as is
         },
         where: 'id = ?',
         whereArgs: [id],
@@ -296,9 +324,7 @@ class DatabaseHelper {
     }
   }
 
-  // ⭐ CORRECT LOGIC: Check for expired tasks
-  // - Missed tasks: Mark as missed, reschedule if repeated
-  // - Completed tasks: Already handled in toggleTaskCompletion
+  // ⭐ FIXED: Background task expiry check
   Future<Map<String, List<Task>>> checkAndUpdateExpiredTasks() async {
     final db = await database;
     final now = DateTime.now();
@@ -307,8 +333,7 @@ class DatabaseHelper {
     final List<Task> missedTasks = [];
     final List<Task> rescheduledTasks = [];
 
-    // ⭐ ONLY check PENDING tasks that are expired
-    // Completed tasks are already handled when user completes them
+    // Only check PENDING tasks that are expired
     final List<Map<String, dynamic>> maps = await db.query(
       'tasks',
       where: 'due_date < ? AND status = ? AND is_completed = ?',
@@ -320,7 +345,7 @@ class DatabaseHelper {
     print('🔍 Found ${expiredTasks.length} expired pending tasks');
 
     for (final task in expiredTasks) {
-      // Mark current task as missed
+      // Mark as missed
       await db.update(
         'tasks',
         {'status': TaskStatus.missed.index},
@@ -331,16 +356,28 @@ class DatabaseHelper {
       print('❌ Task "${task.title}" marked as MISSED');
       missedTasks.add(task);
 
-      // ⭐ CORRECT LOGIC: If task has repeat rule, reschedule it
-      if (task.repeatRule != RepeatRule.none) {
+      // ⭐ FIXED: Only reschedule if NOT already rescheduled
+      if (task.repeatRule != RepeatRule.none && !task.hasBeenRescheduled) {
         final nextDueDate = _calculateNextDueDate(task.dueDate, task.repeatRule);
         final newTask = task.copyWithNewDueDate(nextDueDate);
 
         await insertTask(newTask);
-        print('🔄 Missed repeated task - Created new task for ${nextDueDate}');
+
+        // ⭐ Mark as rescheduled
+        await db.update(
+          'tasks',
+          {'has_been_rescheduled': 1},
+          where: 'id = ?',
+          whereArgs: [task.id],
+        );
+
+        print('🔄 Missed task rescheduled to $nextDueDate');
+        print('✅ Marked as rescheduled to prevent duplicates');
         rescheduledTasks.add(newTask);
+      } else if (task.hasBeenRescheduled) {
+        print('⏹️ Task already rescheduled, skipping');
       } else {
-        print('⏹️ One-time task, NOT rescheduling');
+        print('⏹️ One-time task, not rescheduling');
       }
     }
 
