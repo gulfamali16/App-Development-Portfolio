@@ -52,21 +52,34 @@ A comprehensive Flutter task management application with smart notifications, ba
 
 ```
 lib/
-├── main.dart                          # App entry point + background tasks
+├── main.dart                          # App entry point
 ├── screens/
-│   ├── theme_name_screen.dart         # Initial setup (name + theme)
-│   ├── dashboard_screen.dart          # Main dashboard with stats
-│   ├── manage_screen.dart             # Task list management
-│   ├── add_edit_task_screen.dart      # Create/Edit tasks
-│   ├── settings_screen.dart           # Settings & exports
-│   └── notification_test_screen.dart  # Debug notification testing
+│   ├── theme_name_screen.dart
+│   ├── dashboard_screen.dart
+│   ├── manage_screen.dart
+│   ├── add_edit_task_screen.dart
+│   ├── settings_screen.dart
+│   └── notification_test_screen.dart
 └── utils/
-    ├── database_helper.dart           # SQLite database operations
-    ├── notification_service.dart      # Notification management
-    └── theme_manager.dart             # Theme state management
+    ├── database_helper.dart
+    ├── notification_service.dart
+    └── theme_manager.dart
 
 assets/
 └── logo.png                           # App logo
+
+
+android/
+└── app/
+    ├── src/
+    │   └── main/
+    │       ├── AndroidManifest.xml    # Manifest file
+    │       
+    │       
+    ├── build.gradle.kts               # App-level Gradle (KTS)
+    ├── proguard-rules.pro             # ProGuard / R8 rules
+    
+                      =
 ```
 
 ---
