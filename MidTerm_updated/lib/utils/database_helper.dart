@@ -249,11 +249,17 @@ class DatabaseHelper {
     );
   }
 
+  // ⭐ CORRECT LOGIC: Only reschedule if completed ON TIME (before it becomes missed)
   Future<int> toggleTaskCompletion(String id, bool isCompleted) async {
     final db = await database;
 
     if (isCompleted) {
-      return await db.update(
+      // First, get the task to check if it's repeated
+      final tasks = await getAllTasks();
+      final task = tasks.firstWhere((t) => t.id == id, orElse: () => throw Exception('Task not found'));
+
+      // Mark as completed
+      await db.update(
         'tasks',
         {
           'is_completed': 1,
@@ -262,6 +268,21 @@ class DatabaseHelper {
         where: 'id = ?',
         whereArgs: [id],
       );
+
+      // ⭐ CORRECT LOGIC: Only reschedule if:
+      // 1. Task has repeat rule
+      // 2. Task status is PENDING (not already missed)
+      // If already missed, it was rescheduled before, so DON'T reschedule again
+      if (task.repeatRule != RepeatRule.none && task.status == TaskStatus.pending) {
+        final nextDueDate = _calculateNextDueDate(task.dueDate, task.repeatRule);
+        final newTask = task.copyWithNewDueDate(nextDueDate);
+        await insertTask(newTask);
+        print('🔄 Completed ON TIME - Created new task for ${nextDueDate}');
+      } else if (task.status == TaskStatus.missed) {
+        print('⏹️ Task was already missed and rescheduled, NOT creating duplicate');
+      }
+
+      return 1;
     } else {
       return await db.update(
         'tasks',
@@ -275,7 +296,9 @@ class DatabaseHelper {
     }
   }
 
-  // ⭐ FIXED: Completed repeated tasks should NOT reschedule
+  // ⭐ CORRECT LOGIC: Check for expired tasks
+  // - Missed tasks: Mark as missed, reschedule if repeated
+  // - Completed tasks: Already handled in toggleTaskCompletion
   Future<Map<String, List<Task>>> checkAndUpdateExpiredTasks() async {
     final db = await database;
     final now = DateTime.now();
@@ -284,9 +307,8 @@ class DatabaseHelper {
     final List<Task> missedTasks = [];
     final List<Task> rescheduledTasks = [];
 
-    // Get tasks that are:
-    // 1. Expired (due date < now - 1 minute)
-    // 2. Still pending (not completed, not already marked missed)
+    // ⭐ ONLY check PENDING tasks that are expired
+    // Completed tasks are already handled when user completes them
     final List<Map<String, dynamic>> maps = await db.query(
       'tasks',
       where: 'due_date < ? AND status = ? AND is_completed = ?',
@@ -295,15 +317,9 @@ class DatabaseHelper {
 
     final expiredTasks = List.generate(maps.length, (i) => Task.fromMap(maps[i]));
 
-    print('🔍 Found ${expiredTasks.length} expired tasks');
+    print('🔍 Found ${expiredTasks.length} expired pending tasks');
 
     for (final task in expiredTasks) {
-      // ⭐ CRITICAL FIX: Skip if task is completed
-      if (task.isCompleted || task.status == TaskStatus.completed) {
-        print('✅ Task "${task.title}" is completed, skipping...');
-        continue;
-      }
-
       // Mark current task as missed
       await db.update(
         'tasks',
@@ -315,18 +331,16 @@ class DatabaseHelper {
       print('❌ Task "${task.title}" marked as MISSED');
       missedTasks.add(task);
 
-      // ⭐ FIXED LOGIC: Only reschedule if:
-      // 1. Task has repeat rule
-      // 2. Task is NOT completed
-      if (task.repeatRule != RepeatRule.none && !task.isCompleted) {
+      // ⭐ CORRECT LOGIC: If task has repeat rule, reschedule it
+      if (task.repeatRule != RepeatRule.none) {
         final nextDueDate = _calculateNextDueDate(task.dueDate, task.repeatRule);
         final newTask = task.copyWithNewDueDate(nextDueDate);
 
         await insertTask(newTask);
-        print('🔄 Created new repeated task for ${nextDueDate}');
+        print('🔄 Missed repeated task - Created new task for ${nextDueDate}');
         rescheduledTasks.add(newTask);
       } else {
-        print('⏹️ Task is one-time or completed, NOT rescheduling');
+        print('⏹️ One-time task, NOT rescheduling');
       }
     }
 

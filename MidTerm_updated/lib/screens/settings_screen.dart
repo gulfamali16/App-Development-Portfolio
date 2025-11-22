@@ -10,7 +10,8 @@ import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 import '../utils/theme_manager.dart';
 import '../utils/database_helper.dart';
-import 'notification_test_screen.dart'; // ⭐ NEW IMPORT
+import '../utils/notification_service.dart';
+import 'notification_test_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -158,7 +159,128 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ⭐ NEW: Navigate to Notification Test Screen
+  // ⭐ NEW: Reset All Data
+  void _handleResetAllData() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF244724) : Colors.white,
+          title: Row(
+            children: [
+              const Icon(Icons.warning, color: Colors.red, size: 28),
+              const SizedBox(width: 12),
+              Text(
+                'Reset All Data?',
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'This will delete:\n\n'
+                '• All tasks (pending, completed, missed)\n'
+                '• All notifications\n'
+                '• All settings\n'
+                '• App will restart\n\n'
+                'This action CANNOT be undone!',
+            style: TextStyle(
+              color: isDark ? const Color(0xFF93C893) : Colors.grey[700],
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _performReset();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Reset Everything'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _performReset() async {
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFF19E619)),
+        ),
+      );
+
+      // 1. Cancel all notifications
+      await NotificationService().cancelAllNotifications();
+      print('✅ Cancelled all notifications');
+
+      // 2. Delete database
+      final dbFolder = await getDatabasesPath();
+      final dbPath = p.join(dbFolder, 'task_manager.db');
+      final dbFile = File(dbPath);
+
+      if (await dbFile.exists()) {
+        await dbFile.delete();
+        print('✅ Deleted database');
+      }
+
+      // 3. Clear all shared preferences/settings
+      final db = await DatabaseHelper().database;
+      await db.execute('DELETE FROM app_settings');
+      print('✅ Cleared settings');
+
+      // Wait a moment
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.pop(context);
+
+        // Show success message
+        _showSnackBar('✅ All data reset! Restarting app...');
+
+        // Wait and restart
+        await Future.delayed(const Duration(seconds: 2));
+
+        // Navigate to setup screen
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/theme',
+                (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Reset error: $e');
+      if (mounted) {
+        Navigator.pop(context);
+        _showSnackBar('Error resetting data: $e');
+      }
+    }
+  }
+
   void _openNotificationTest() {
     Navigator.push(
       context,
@@ -180,7 +302,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } else if (theme == 'dark') {
       await themeManager.toggleTheme(true);
     } else {
-      await themeManager.toggleTheme(false); // Auto = light default
+      await themeManager.toggleTheme(false);
     }
   }
 
@@ -198,29 +320,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // ⭐ REMOVED BACK BUTTON - Only title now
             Container(
               color: bgColor,
               padding: const EdgeInsets.all(16).copyWith(bottom: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.arrow_back, color: textColor, size: 24),
+              child: Center(
+                child: Text(
+                  "Settings",
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        "Settings",
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+                ),
               ),
             ),
 
@@ -277,13 +389,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onTap: _handleCloudUpload,
                     ),
 
-                    // Notification Settings
                     _buildSectionHeader(
                       "Notification Settings",
                       textColor: textColor,
                     ),
 
-                    // ⭐ NEW: Notification Test Button
                     _buildSettingItem(
                       title: "🔔 Test Notifications (Debug)",
                       textColor: textColor,
@@ -303,7 +413,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         textColor: textColor,
                         value: _reminderTime),
 
-                    // Other sections
+                    // ⭐ NEW: Danger Zone Section
+                    _buildSectionHeader("Danger Zone", textColor: Colors.red),
+
+                    _buildSettingItem(
+                      title: "🗑️ Reset All Data",
+                      textColor: Colors.red,
+                      onTap: _handleResetAllData,
+                      icon: Icons.delete_forever,
+                    ),
+
                     _buildSectionHeader(
                       "App Info",
                       textColor: textColor,
@@ -316,6 +435,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         title: "Version",
                         textColor: textColor,
                         value: _appVersion),
+
+                    const SizedBox(height: 80), // Extra space for bottom nav
                   ],
                 ),
               ),
