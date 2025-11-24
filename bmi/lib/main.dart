@@ -172,151 +172,197 @@ class BMIHomeScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Menu Icon with glow
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF00D9FF).withOpacity(0.2),
-                            const Color(0xFF00D9FF).withOpacity(0.05),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF00D9FF).withOpacity(0.4),
-                          width: 1,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.menu_rounded,
-                        color: Color(0xFF00D9FF),
-                        size: 26,
+                child: Center(
+                  child: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [
+                        Color(0xFF00D9FF),
+                        Color(0xFF7B61FF),
+                      ],
+                    ).createShader(bounds),
+                    child: const Text(
+                      'BMI CALCULATOR',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                        color: Colors.white,
                       ),
                     ),
-
-                    // App Title with gradient text effect
-                    ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          Color(0xFF00D9FF),
-                          Color(0xFF7B61FF),
-                        ],
-                      ).createShader(bounds),
-                      child: const Text(
-                        'BMI CALCULATOR',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-
-                    // Settings Icon with glow
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF7B61FF).withOpacity(0.2),
-                            const Color(0xFF7B61FF).withOpacity(0.05),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF7B61FF).withOpacity(0.4),
-                          width: 1,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.settings_rounded,
-                        color: Color(0xFF7B61FF),
-                        size: 26,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
 
               // Body Content - Themed Containers
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      // Top Row - Two Containers
-                      Expanded(
-                        flex: 2,
-                        child: Row(
-                          children: [
-                            // Male Container
-                            Expanded(
-                              child: ReusableCard(
-                                icon: Icons.male_rounded,
-                                label: 'MALE',
-                                color: const Color(0xFF00D9FF),
+                child: Column(
+                  children: [
+                    // Top Row - Two Containers
+                    Expanded(
+                      child: Row(
+                        children: [
+                          // Male Container
+                          Expanded(
+                            child: RepeatContainerCode(
+                              colors: const Color(0xFF1E1E2E),
+                              cardWidget: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.male_rounded,
+                                    size: 80,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(height: 15),
+                                  Text(
+                                    'MALE',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            // Female Container
-                            Expanded(
-                              child: ReusableCard(
-                                icon: Icons.female_rounded,
-                                label: 'FEMALE',
-                                color: const Color(0xFFFF6B9D),
+                          ),
+                          // Female Container
+                          Expanded(
+                            child: RepeatContainerCode(
+                              colors: const Color(0xFF1E1E2E),
+                              cardWidget: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.female_rounded,
+                                    size: 80,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(height: 15),
+                                  Text(
+                                    'FEMALE',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
                               ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Middle Container - Full Width
+                    Expanded(
+                      child: RepeatContainerCode(
+                        colors: const Color(0xFF1E1E2E),
+                        cardWidget: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'HEIGHT',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white70,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  '180',
+                                  style: TextStyle(
+                                    fontSize: 50,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'cm',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
+                    ),
 
-                      const SizedBox(height: 16),
-
-                      // Middle Container - Full Width
-                      Expanded(
-                        flex: 2,
-                        child: ReusableCard(
-                          icon: Icons.height_rounded,
-                          label: 'HEIGHT',
-                          color: const Color(0xFF7B61FF),
-                          isFullWidth: true,
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Bottom Row - Two Containers
-                      Expanded(
-                        flex: 2,
-                        child: Row(
-                          children: [
-                            // Weight Container
-                            Expanded(
-                              child: ReusableCard(
-                                icon: Icons.monitor_weight_rounded,
-                                label: 'WEIGHT',
-                                color: const Color(0xFF00D9FF),
+                    // Bottom Row - Two Containers
+                    Expanded(
+                      child: Row(
+                        children: [
+                          // Weight Container
+                          Expanded(
+                            child: RepeatContainerCode(
+                              colors: const Color(0xFF1E1E2E),
+                              cardWidget: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'WEIGHT',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    '70',
+                                    style: TextStyle(
+                                      fontSize: 50,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            // Age Container
-                            Expanded(
-                              child: ReusableCard(
-                                icon: Icons.calendar_today_rounded,
-                                label: 'AGE',
-                                color: const Color(0xFF7B61FF),
+                          ),
+                          // Age Container
+                          Expanded(
+                            child: RepeatContainerCode(
+                              colors: const Color(0xFF1E1E2E),
+                              cardWidget: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'AGE',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    '25',
+                                    style: TextStyle(
+                                      fontSize: 50,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -327,86 +373,26 @@ class BMIHomeScreen extends StatelessWidget {
   }
 }
 
-// Reusable Card Widget Class
-class ReusableCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool isFullWidth;
-
-  const ReusableCard({
+// Reusable Container Widget Class
+class RepeatContainerCode extends StatelessWidget {
+  const RepeatContainerCode({
     super.key,
-    required this.icon,
-    required this.label,
-    required this.color,
-    this.isFullWidth = false,
+    required this.colors,
+    required this.cardWidget,
   });
+
+  final Color colors;
+  final Widget cardWidget;
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.all(15.0),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF1E1E2E),
-            const Color(0xFF2A2A3E),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.2),
-            blurRadius: 15,
-            spreadRadius: 1,
-          ),
-        ],
+        color: colors,
+        borderRadius: BorderRadius.circular(10.0),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Icon with glow effect
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  color.withOpacity(0.2),
-                  color.withOpacity(0.05),
-                ],
-              ),
-              border: Border.all(
-                color: color.withOpacity(0.4),
-                width: 2,
-              ),
-            ),
-            child: Icon(
-              icon,
-              size: isFullWidth ? 60 : 50,
-              color: color,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Label
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
-              letterSpacing: 2,
-            ),
-          ),
-        ],
-      ),
+      child: cardWidget,
     );
   }
 }
