@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:bmi_app/IconCard.dart';
-import 'package:bmi_app/RepeatContainerCode.dart';
+import 'IconCard.dart';
+import 'RepeatContainerCode.dart';
+
 void main() {
   runApp(const BMICalculatorApp());
 }
@@ -118,7 +119,259 @@ class BMICalculatorApp extends StatelessWidget {
           size: 32,
         ),
       ),
-      home: const BMIHomeScreen(),
+      home: const InputPage(),
+    );
+  }
+}
+
+// Constants for colors
+const Color activeCardColor = Color(0xFF1E1E2E);
+const Color inactiveCardColor = Color(0xFF111328);
+
+// Input Page - StatefulWidget
+class InputPage extends StatefulWidget {
+  const InputPage({super.key});
+
+  @override
+  State<InputPage> createState() => _InputPageState();
+}
+
+class _InputPageState extends State<InputPage> {
+  // Gender selection: 1 = male, 2 = female
+  int selectedGender = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // Advanced Gradient Background
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF0F0F1E), // Dark blue
+              const Color(0xFF1A1A2E), // Medium dark
+              const Color(0xFF16213E), // Blue tint
+              const Color(0xFF0F0F1E), // Dark blue
+            ],
+            stops: const [0.0, 0.3, 0.7, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Advanced Custom AppBar
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF1E1E2E).withOpacity(0.8),
+                      const Color(0xFF2A2A3E).withOpacity(0.6),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF00D9FF).withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00D9FF).withOpacity(0.2),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [
+                        Color(0xFF00D9FF),
+                        Color(0xFF7B61FF),
+                      ],
+                    ).createShader(bounds),
+                    child: const Text(
+                      'BMI CALCULATOR',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Body Content
+              Expanded(
+                child: Column(
+                  children: [
+                    // Top Row - Gender Selection with GestureDetector
+                    Expanded(
+                      child: Row(
+                        children: [
+                          // Male Container
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedGender = 1;
+                                });
+                              },
+                              child: RepeatContainerCode(
+                                colors: selectedGender == 1
+                                    ? activeCardColor
+                                    : inactiveCardColor,
+                                cardWidget: IconCard(
+                                  icon: Icons.male_rounded,
+                                  label: 'MALE',
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Female Container
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedGender = 2;
+                                });
+                              },
+                              child: RepeatContainerCode(
+                                colors: selectedGender == 2
+                                    ? activeCardColor
+                                    : inactiveCardColor,
+                                cardWidget: IconCard(
+                                  icon: Icons.female_rounded,
+                                  label: 'FEMALE',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Middle Container - Height
+                    Expanded(
+                      child: RepeatContainerCode(
+                        colors: activeCardColor,
+                        cardWidget: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'HEIGHT',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white70,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  '180',
+                                  style: TextStyle(
+                                    fontSize: 50,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'cm',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Bottom Row - Weight & Age
+                    Expanded(
+                      child: Row(
+                        children: [
+                          // Weight Container
+                          Expanded(
+                            child: RepeatContainerCode(
+                              colors: activeCardColor,
+                              cardWidget: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'WEIGHT',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    '70',
+                                    style: TextStyle(
+                                      fontSize: 50,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Age Container
+                          Expanded(
+                            child: RepeatContainerCode(
+                              colors: activeCardColor,
+                              cardWidget: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'AGE',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    '25',
+                                    style: TextStyle(
+                                      fontSize: 50,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -206,24 +459,9 @@ class BMIHomeScreen extends StatelessWidget {
                           Expanded(
                             child: RepeatContainerCode(
                               colors: const Color(0xFF1E1E2E),
-                              cardWidget: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.male_rounded,
-                                    size: 80,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(height: 15),
-                                  Text(
-                                    'MALE',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
+                              cardWidget: IconCard(
+                                icon: Icons.male_rounded,
+                                label: 'MALE',
                               ),
                             ),
                           ),
@@ -231,24 +469,9 @@ class BMIHomeScreen extends StatelessWidget {
                           Expanded(
                             child: RepeatContainerCode(
                               colors: const Color(0xFF1E1E2E),
-                              cardWidget: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.female_rounded,
-                                    size: 80,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(height: 15),
-                                  Text(
-                                    'FEMALE',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
+                              cardWidget: IconCard(
+                                icon: Icons.female_rounded,
+                                label: 'FEMALE',
                               ),
                             ),
                           ),
@@ -373,4 +596,6 @@ class BMIHomeScreen extends StatelessWidget {
     );
   }
 }
+
+
 
