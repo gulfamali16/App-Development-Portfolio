@@ -175,30 +175,6 @@ class BMIHomeScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Menu Icon with glow
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF00D9FF).withOpacity(0.2),
-                            const Color(0xFF00D9FF).withOpacity(0.05),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF00D9FF).withOpacity(0.4),
-                          width: 1,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.menu_rounded,
-                        color: Color(0xFF00D9FF),
-                        size: 26,
-                      ),
-                    ),
-
-                    // App Title with gradient text effect
                     ShaderMask(
                       shaderCallback: (bounds) => const LinearGradient(
                         colors: [
@@ -216,106 +192,80 @@ class BMIHomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-
-                    // Settings Icon with glow
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF7B61FF).withOpacity(0.2),
-                            const Color(0xFF7B61FF).withOpacity(0.05),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF7B61FF).withOpacity(0.4),
-                          width: 1,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.settings_rounded,
-                        color: Color(0xFF7B61FF),
-                        size: 26,
-                      ),
-                    ),
                   ],
                 ),
               ),
 
-              // Body will be added in next step
+              // Body Content - Themed Containers
               Expanded(
-                child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Decorative icon
-                      Container(
-                        padding: const EdgeInsets.all(30),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFF00D9FF).withOpacity(0.2),
-                              const Color(0xFF7B61FF).withOpacity(0.2),
-                            ],
-                          ),
-                          border: Border.all(
-                            color: const Color(0xFF00D9FF).withOpacity(0.3),
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF00D9FF).withOpacity(0.3),
-                              blurRadius: 30,
-                              spreadRadius: 5,
+                      // Top Row - Two Containers
+                      Expanded(
+                        flex: 2,
+                        child: Row(
+                          children: [
+                            // Left Container
+                            Expanded(
+                              child: _buildThemedContainer(
+                                icon: Icons.male_rounded,
+                                label: 'MALE',
+                                color: const Color(0xFF00D9FF),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // Right Container
+                            Expanded(
+                              child: _buildThemedContainer(
+                                icon: Icons.female_rounded,
+                                label: 'FEMALE',
+                                color: const Color(0xFFFF6B9D),
+                              ),
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.fitness_center_rounded,
-                          size: 80,
-                          color: Color(0xFF00D9FF),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Middle Container - Full Width
+                      Expanded(
+                        flex: 2,
+                        child: _buildThemedContainer(
+                          icon: Icons.height_rounded,
+                          label: 'HEIGHT',
+                          color: const Color(0xFF7B61FF),
+                          isFullWidth: true,
                         ),
                       ),
 
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 16),
 
-                      ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [
-                            Color(0xFF00D9FF),
-                            Color(0xFF7B61FF),
+                      // Bottom Row - Two Containers
+                      Expanded(
+                        flex: 2,
+                        child: Row(
+                          children: [
+                            // Left Container
+                            Expanded(
+                              child: _buildThemedContainer(
+                                icon: Icons.monitor_weight_rounded,
+                                label: 'WEIGHT',
+                                color: const Color(0xFF00D9FF),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // Right Container
+                            Expanded(
+                              child: _buildThemedContainer(
+                                icon: Icons.calendar_today_rounded,
+                                label: 'AGE',
+                                color: const Color(0xFF7B61FF),
+                              ),
+                            ),
                           ],
-                        ).createShader(bounds),
-                        child: const Text(
-                          'Step 1: Theme Complete',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      Text(
-                        'AppBar & Background Ready ✨',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withOpacity(0.7),
-                          letterSpacing: 1,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      Text(
-                        'Body content coming in next step!',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.5),
                         ),
                       ),
                     ],
@@ -325,6 +275,79 @@ class BMIHomeScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Build Themed Container Widget
+  static Widget _buildThemedContainer({
+    required IconData icon,
+    required String label,
+    required Color color,
+    bool isFullWidth = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1E1E2E),
+            const Color(0xFF2A2A3E),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.2),
+            blurRadius: 15,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Icon with glow effect
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  color.withOpacity(0.2),
+                  color.withOpacity(0.05),
+                ],
+              ),
+              border: Border.all(
+                color: color.withOpacity(0.4),
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: isFullWidth ? 60 : 50,
+              color: color,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Label
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+              letterSpacing: 2,
+            ),
+          ),
+        ],
       ),
     );
   }
