@@ -128,6 +128,12 @@ class BMICalculatorApp extends StatelessWidget {
 const Color activeCardColor = Color(0xFF1E1E2E);
 const Color inactiveCardColor = Color(0xFF111328);
 
+// Enum for Gender
+enum Gender {
+  male,
+  female,
+}
+
 // Input Page - StatefulWidget
 class InputPage extends StatefulWidget {
   const InputPage({super.key});
@@ -137,8 +143,8 @@ class InputPage extends StatefulWidget {
 }
 
 class _InputPageState extends State<InputPage> {
-  // Gender selection: 1 = male, 2 = female
-  int selectedGender = 0;
+  // Gender selection using enum
+  Gender? selectedGender;
 
   @override
   Widget build(BuildContext context) {
@@ -221,11 +227,11 @@ class _InputPageState extends State<InputPage> {
                             child: GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  selectedGender = 1;
+                                  selectedGender = Gender.male;
                                 });
                               },
                               child: RepeatContainerCode(
-                                colors: selectedGender == 1
+                                colors: selectedGender == Gender.male
                                     ? activeCardColor
                                     : inactiveCardColor,
                                 cardWidget: IconCard(
@@ -240,11 +246,11 @@ class _InputPageState extends State<InputPage> {
                             child: GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  selectedGender = 2;
+                                  selectedGender = Gender.female;
                                 });
                               },
                               child: RepeatContainerCode(
-                                colors: selectedGender == 2
+                                colors: selectedGender == Gender.female
                                     ? activeCardColor
                                     : inactiveCardColor,
                                 cardWidget: IconCard(
@@ -596,6 +602,5 @@ class BMIHomeScreen extends StatelessWidget {
     );
   }
 }
-
 
 
