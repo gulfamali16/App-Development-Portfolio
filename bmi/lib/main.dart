@@ -175,6 +175,30 @@ class BMIHomeScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // Menu Icon with glow
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF00D9FF).withOpacity(0.2),
+                            const Color(0xFF00D9FF).withOpacity(0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF00D9FF).withOpacity(0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.menu_rounded,
+                        color: Color(0xFF00D9FF),
+                        size: 26,
+                      ),
+                    ),
+
+                    // App Title with gradient text effect
                     ShaderMask(
                       shaderCallback: (bounds) => const LinearGradient(
                         colors: [
@@ -192,6 +216,29 @@ class BMIHomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+
+                    // Settings Icon with glow
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF7B61FF).withOpacity(0.2),
+                            const Color(0xFF7B61FF).withOpacity(0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF7B61FF).withOpacity(0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.settings_rounded,
+                        color: Color(0xFF7B61FF),
+                        size: 26,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -207,18 +254,18 @@ class BMIHomeScreen extends StatelessWidget {
                         flex: 2,
                         child: Row(
                           children: [
-                            // Left Container
+                            // Male Container
                             Expanded(
-                              child: _buildThemedContainer(
+                              child: ReusableCard(
                                 icon: Icons.male_rounded,
                                 label: 'MALE',
                                 color: const Color(0xFF00D9FF),
                               ),
                             ),
                             const SizedBox(width: 16),
-                            // Right Container
+                            // Female Container
                             Expanded(
-                              child: _buildThemedContainer(
+                              child: ReusableCard(
                                 icon: Icons.female_rounded,
                                 label: 'FEMALE',
                                 color: const Color(0xFFFF6B9D),
@@ -233,7 +280,7 @@ class BMIHomeScreen extends StatelessWidget {
                       // Middle Container - Full Width
                       Expanded(
                         flex: 2,
-                        child: _buildThemedContainer(
+                        child: ReusableCard(
                           icon: Icons.height_rounded,
                           label: 'HEIGHT',
                           color: const Color(0xFF7B61FF),
@@ -248,18 +295,18 @@ class BMIHomeScreen extends StatelessWidget {
                         flex: 2,
                         child: Row(
                           children: [
-                            // Left Container
+                            // Weight Container
                             Expanded(
-                              child: _buildThemedContainer(
+                              child: ReusableCard(
                                 icon: Icons.monitor_weight_rounded,
                                 label: 'WEIGHT',
                                 color: const Color(0xFF00D9FF),
                               ),
                             ),
                             const SizedBox(width: 16),
-                            // Right Container
+                            // Age Container
                             Expanded(
-                              child: _buildThemedContainer(
+                              child: ReusableCard(
                                 icon: Icons.calendar_today_rounded,
                                 label: 'AGE',
                                 color: const Color(0xFF7B61FF),
@@ -278,14 +325,25 @@ class BMIHomeScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  // Build Themed Container Widget
-  static Widget _buildThemedContainer({
-    required IconData icon,
-    required String label,
-    required Color color,
-    bool isFullWidth = false,
-  }) {
+// Reusable Card Widget Class
+class ReusableCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool isFullWidth;
+
+  const ReusableCard({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.isFullWidth = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
