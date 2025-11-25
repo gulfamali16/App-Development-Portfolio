@@ -342,10 +342,6 @@ class _InputPageState extends State<InputPage> {
                                     style: kLabelTextStyle,
                                   ),
                                   const SizedBox(height: 10),
-                                  Text(
-                                    '70',
-                                    style: kNumberTextStyle,
-                                  ),
                                 ],
                               ),
                             ),
@@ -362,10 +358,6 @@ class _InputPageState extends State<InputPage> {
                                     style: kLabelTextStyle,
                                   ),
                                   const SizedBox(height: 10),
-                                  Text(
-                                    '25',
-                                    style: kNumberTextStyle,
-                                  ),
                                 ],
                               ),
                             ),
