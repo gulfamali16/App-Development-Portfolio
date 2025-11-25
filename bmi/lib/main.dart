@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'IconCard.dart';
 import 'RepeatContainerCode.dart';
 
+
 void main() {
   runApp(const BMICalculatorApp());
 }
@@ -231,6 +232,7 @@ class _InputPageState extends State<InputPage> {
                                 });
                               },
                               child: RepeatContainerCode(
+                                // Ternary Operator: condition ? true : false
                                 colors: selectedGender == Gender.male
                                     ? activeCardColor
                                     : inactiveCardColor,
@@ -250,6 +252,7 @@ class _InputPageState extends State<InputPage> {
                                 });
                               },
                               child: RepeatContainerCode(
+                                // Ternary Operator: condition ? true : false
                                 colors: selectedGender == Gender.female
                                     ? activeCardColor
                                     : inactiveCardColor,
@@ -602,5 +605,3 @@ class BMIHomeScreen extends StatelessWidget {
     );
   }
 }
-
-
