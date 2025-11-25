@@ -143,6 +143,7 @@ class InputPage extends StatefulWidget {
 class _InputPageState extends State<InputPage> {
   // Gender selection using enum
   Gender? selectedGender;
+  int height = 180;
 
   @override
   Widget build(BuildContext context) {
@@ -268,16 +269,62 @@ class _InputPageState extends State<InputPage> {
                         colors: kActiveCardColor,
                         cardWidget: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            IconCard(
-                              icon: Icons.height_rounded,
-                              label: 'HEIGHT',
+                            // Title
+                            Text(
+                              'HEIGHT',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white70,
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            // Value + cm
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  height.toString(),
+                                  style: TextStyle(
+                                    fontSize: 50,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'cm',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            // Slider
+                            Slider(
+                              value: height.toDouble(),
+                              min: 54,
+                              max: 272,
+                              activeColor: Colors.cyanAccent,
+                              inactiveColor: Colors.white30,
+                              onChanged: (value) {
+                                setState(() {
+                                  height = value.toInt();
+                                });
+                              },
                             ),
                           ],
                         ),
                       ),
                     ),
+
 
                     // Bottom Row - Weight & Age
                     Expanded(
