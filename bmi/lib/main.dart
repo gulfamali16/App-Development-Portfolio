@@ -144,6 +144,8 @@ class _InputPageState extends State<InputPage> {
   // Gender selection using enum
   Gender? selectedGender;
   int height = 180;
+  int weight = 70;
+  int age = 25;
 
   @override
   Widget build(BuildContext context) {
@@ -327,6 +329,7 @@ class _InputPageState extends State<InputPage> {
 
 
                     // Bottom Row - Weight & Age
+                    // Bottom Row - Weight & Age
                     Expanded(
                       child: Row(
                         children: [
@@ -337,15 +340,55 @@ class _InputPageState extends State<InputPage> {
                               cardWidget: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
+                                  Text('WEIGHT', style: kLabelTextStyle),
+                                  const SizedBox(height: 5),
                                   Text(
-                                    'WEIGHT',
-                                    style: kLabelTextStyle,
+                                    weight.toString(),
+                                    style: kNumberTextStyle,
                                   ),
+
                                   const SizedBox(height: 10),
+
+                                  // Round Buttons Row
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Minus Button
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            if (weight > 1) weight--;
+                                          });
+                                        },
+                                        child: CircleAvatar(
+                                          backgroundColor: Colors.white12,
+                                          radius: 22,
+                                          child: Icon(Icons.remove, color: Colors.white),
+                                        ),
+                                      ),
+
+                                      const SizedBox(width: 15),
+
+                                      // Plus Button
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            weight++;
+                                          });
+                                        },
+                                        child: CircleAvatar(
+                                          backgroundColor: Colors.white12,
+                                          radius: 22,
+                                          child: Icon(Icons.add, color: Colors.white),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
                           ),
+
                           // Age Container
                           Expanded(
                             child: RepeatContainerCode(
@@ -353,11 +396,50 @@ class _InputPageState extends State<InputPage> {
                               cardWidget: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
+                                  Text('AGE', style: kLabelTextStyle),
+                                  const SizedBox(height: 5),
                                   Text(
-                                    'AGE',
-                                    style: kLabelTextStyle,
+                                    age.toString(),
+                                    style: kNumberTextStyle,
                                   ),
+
                                   const SizedBox(height: 10),
+
+                                  // Round Buttons Row
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Minus Button
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            if (age > 1) age--;
+                                          });
+                                        },
+                                        child: CircleAvatar(
+                                          backgroundColor: Colors.white12,
+                                          radius: 22,
+                                          child: Icon(Icons.remove, color: Colors.white),
+                                        ),
+                                      ),
+
+                                      const SizedBox(width: 15),
+
+                                      // Plus Button
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            age++;
+                                          });
+                                        },
+                                        child: CircleAvatar(
+                                          backgroundColor: Colors.white12,
+                                          radius: 22,
+                                          child: Icon(Icons.add, color: Colors.white),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
@@ -589,7 +671,13 @@ class BMIHomeScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            ],
+              Container(
+                color: Color(0xFFFFFFFF),
+                margin: EdgeInsets.only(top: 10.0),
+                width: double.infinity,
+                height: 80.0,
+              ),  // Added this closing bracket for the Container
+            ],  // Added this closing bracket for the Column children
           ),
         ),
       ),
