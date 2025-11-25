@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'IconCard.dart';
 import 'RepeatContainerCode.dart';
+import 'constantfile.dart';
+
 
 void main() {
   runApp(const BMICalculatorApp());
@@ -124,10 +126,6 @@ class BMICalculatorApp extends StatelessWidget {
   }
 }
 
-// Constants for colors
-const Color activeCardColor = Color(0xFF1E1E2E);
-const Color inactiveCardColor = Color(0xFF111328);
-
 // Enum for Gender
 enum Gender {
   male,
@@ -227,8 +225,8 @@ class _InputPageState extends State<InputPage> {
                             child: RepeatContainerCode(
                               // Ternary Operator: condition ? true : false
                               colors: selectedGender == Gender.male
-                                  ? activeCardColor
-                                  : inactiveCardColor,
+                                  ? kActiveCardColor
+                                  : kInactiveCardColor,
                               cardWidget: IconCard(
                                 icon: Icons.male_rounded,
                                 label: 'MALE',
@@ -246,8 +244,8 @@ class _InputPageState extends State<InputPage> {
                             child: RepeatContainerCode(
                               // Ternary Operator: condition ? true : false
                               colors: selectedGender == Gender.female
-                                  ? activeCardColor
-                                  : inactiveCardColor,
+                                  ? kActiveCardColor
+                                  : kInactiveCardColor,
                               cardWidget: IconCard(
                                 icon: Icons.female_rounded,
                                 label: 'FEMALE',
@@ -267,41 +265,14 @@ class _InputPageState extends State<InputPage> {
                     // Middle Container - Height
                     Expanded(
                       child: RepeatContainerCode(
-                        colors: activeCardColor,
+                        colors: kActiveCardColor,
                         cardWidget: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
-                              'HEIGHT',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white70,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.baseline,
-                              textBaseline: TextBaseline.alphabetic,
-                              children: [
-                                Text(
-                                  '180',
-                                  style: TextStyle(
-                                    fontSize: 50,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  'cm',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                              ],
+                            IconCard(
+                              icon: Icons.height_rounded,
+                              label: 'HEIGHT',
                             ),
                           ],
                         ),
@@ -315,26 +286,18 @@ class _InputPageState extends State<InputPage> {
                           // Weight Container
                           Expanded(
                             child: RepeatContainerCode(
-                              colors: activeCardColor,
+                              colors: kActiveCardColor,
                               cardWidget: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
                                     'WEIGHT',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white70,
-                                    ),
+                                    style: kLabelTextStyle,
                                   ),
                                   const SizedBox(height: 10),
                                   Text(
                                     '70',
-                                    style: TextStyle(
-                                      fontSize: 50,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                    ),
+                                    style: kNumberTextStyle,
                                   ),
                                 ],
                               ),
@@ -343,26 +306,18 @@ class _InputPageState extends State<InputPage> {
                           // Age Container
                           Expanded(
                             child: RepeatContainerCode(
-                              colors: activeCardColor,
+                              colors: kActiveCardColor,
                               cardWidget: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
                                     'AGE',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white70,
-                                    ),
+                                    style: kLabelTextStyle,
                                   ),
                                   const SizedBox(height: 10),
                                   Text(
                                     '25',
-                                    style: TextStyle(
-                                      fontSize: 50,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                    ),
+                                    style: kNumberTextStyle,
                                   ),
                                 ],
                               ),

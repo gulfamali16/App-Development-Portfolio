@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'constantfile.dart';
 
 
 // Reusable Container Widget Class with GestureDetector
@@ -19,10 +20,10 @@ class RepeatContainerCode extends StatelessWidget {
     return GestureDetector(
       onTap: onPress, // Use function object here
       child: Container(
-        margin: const EdgeInsets.all(15.0),
+        margin: const EdgeInsets.all(kContainerMargin),
         decoration: BoxDecoration(
           color: colors,
-          borderRadius: BorderRadius.circular(10.0),
+          borderRadius: BorderRadius.circular(kContainerBorderRadius),
         ),
         child: cardWidget,
       ),

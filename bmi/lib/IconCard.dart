@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'package:bmi_app/RepeatContainerCode.dart';
+import 'constantfile.dart';
 
 
 // Icon Card Widget Class
@@ -21,17 +22,13 @@ class IconCard extends StatelessWidget {
       children: [
         Icon(
           icon,
-          size: 80,
+          size: kIconSize,
           color: Colors.white,
         ),
-        const SizedBox(height: 15),
+        SizedBox(height: kSpaceBetweenIconAndLabel),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white70,
-          ),
+          style: kLabelTextStyle,
         ),
       ],
     );
