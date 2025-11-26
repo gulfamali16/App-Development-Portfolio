@@ -1,8 +1,12 @@
+// ============================================
+// main.dart - COMPLETE MAIN FILE
+// ============================================
 import 'package:flutter/material.dart';
 import 'IconCard.dart';
 import 'RepeatContainerCode.dart';
 import 'constantfile.dart';
 import 'resultfile.dart';
+import 'CalculatorBrain.dart';
 
 void main() {
   runApp(const BMICalculatorApp());
@@ -43,12 +47,6 @@ class BMICalculatorApp extends StatelessWidget {
       home: const InputPage(),
     );
   }
-}
-
-// Enum for Gender
-enum Gender {
-  male,
-  female,
 }
 
 // Input Page - StatefulWidget
@@ -347,10 +345,24 @@ class _InputPageState extends State<InputPage> {
               // Bottom Calculate Button
               GestureDetector(
                 onTap: () {
+                  // Calculate BMI using CalculatorBrain
+                  CalculatorBrain calc = CalculatorBrain(
+                    height: height,
+                    weight: weight,
+                    gender: selectedGender,
+                    age: age,
+                  );
+
+                  // Navigate to Result Page
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ResultFile(),
+                      builder: (context) => ResultFile(
+                        bmiResult: calc.calculateBMI(),
+                        resultText: calc.getResult(),
+                        interpretation: calc.getInterpretation(),
+                        resultColor: calc.getResultColor(),
+                      ),
                     ),
                   );
                 },

@@ -24,6 +24,8 @@ const double kContainerBorderRadius = 10.0;
 const double kIconSize = 80.0;
 const double kSpaceBetweenIconAndLabel = 15.0;
 
+enum Gender { male, female }
+
 // ============================================
 // END OF CONSTANTS FILE
 // ============================================
