@@ -20,6 +20,9 @@ dependencies:
   # Supabase - Backend & Authentication
   supabase_flutter: ^2.5.6
 
+  # Google Sign-In (NEW - Added for Google authentication)
+  google_sign_in: ^6.2.1
+
   # State Management
   provider: ^6.1.2
 

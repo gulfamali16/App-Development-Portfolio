@@ -1,6 +1,8 @@
+// lib/Screens/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../main.dart';
 
 class ProfileScreen extends StatefulWidget {
   final bool isFirstTime; // For first-time setup
@@ -85,9 +87,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
+            color: isDark ? const Color(0xFF1A2C2A) : Colors.white,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
@@ -130,9 +133,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
+            color: isDark ? const Color(0xFF1A2C2A) : Colors.white,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
@@ -153,7 +157,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               ..._statusOptions.map((status) {
                 return ListTile(
-                  title: Text(status),
+                  title: Text(
+                    status,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
+                  ),
                   trailing: status == _currentStatus
                       ? const Icon(Icons.check, color: Color(0xFF128C7E))
                       : null,
@@ -201,16 +210,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         // If first time setup, navigate to home
         if (widget.isFirstTime) {
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+          NavigationHelper.navigateToHome(context);
         } else {
-          Navigator.pop(context); // Go back to previous screen
+          NavigationHelper.goBack(context);
         }
       });
     }
   }
 
   void _handleCancel() {
-    Navigator.pop(context);
+    NavigationHelper.goBack(context);
   }
 
   String? _validateName(String? value) {
@@ -371,7 +380,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white : const Color(0xFF374151),
                         fontFamily: 'Plus Jakarta Sans',
-                       // marginBottom: 8,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -492,7 +500,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: ChoiceChip(
-                              label: Text(status),
+                              label: Text(
+                                status,
+                                style: const TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontSize: 12,
+                                ),
+                              ),
                               selected: _currentStatus == status,
                               selectedColor: primaryColor,
                               backgroundColor: isDark
@@ -536,15 +550,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           elevation: 4,
                           shadowColor: primaryColor.withOpacity(0.2),
                           animationDuration: const Duration(milliseconds: 200),
-                        ).copyWith(
-                          overlayColor: MaterialStateProperty.resolveWith<Color?>(
-                                (Set<MaterialState> states) {
-                              if (states.contains(MaterialState.pressed)) {
-                                return const Color(0xFF0E7569);
-                              }
-                              return null;
-                            },
-                          ),
                         ),
                         child: _isLoading
                             ? const SizedBox(
@@ -566,8 +571,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
 
-                    if (!widget.isFirstTime)
-                      const SizedBox(height: 16),
+                    if (!widget.isFirstTime) const SizedBox(height: 16),
 
                     if (!widget.isFirstTime)
                       SizedBox(

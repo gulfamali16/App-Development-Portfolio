@@ -1,4 +1,4 @@
-// lib/services/auth_service.dart (UPDATED VERSION)
+// lib/services/auth_service.dart (COMPLETE UPDATED VERSION)
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
@@ -11,6 +11,55 @@ class AuthService {
 
   // Check if user is logged in
   bool get isLoggedIn => currentUser != null;
+
+  // LOGIN WITH GOOGLE (NEW METHOD)
+  Future<void> loginWithGoogle() async {
+    try {
+      await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'io.supabase.chatapp://login-callback/',
+      );
+    } catch (e) {
+      print('Google login error: $e');
+      rethrow;
+    }
+  }
+
+  // SIGN UP with Google
+  Future<void> signUpWithGoogle() async {
+    try {
+      await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'io.supabase.chatapp://login-callback/',
+      );
+    } catch (e) {
+      print('Google signup error: $e');
+      rethrow;
+    }
+  }
+
+  // CHECK USER PROFILE (NEW METHOD)
+  Future<bool> checkUserProfile(String userId) async {
+    try {
+      final profile = await _supabase
+          .from('users')
+          .select('display_name, avatar_url, status, about')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (profile == null) {
+        return false; // Profile doesn't exist
+      }
+
+      // Check if profile has been completed
+      // A profile is considered complete if it has a display_name
+      final displayName = profile['display_name'] as String?;
+      return displayName != null && displayName.isNotEmpty;
+    } catch (e) {
+      print('Error checking user profile: $e');
+      return false;
+    }
+  }
 
   // SIGN UP with Email (IMPROVED)
   Future<AuthResponse> signUpWithEmail({
@@ -119,7 +168,7 @@ class AuthService {
         await _createUserProfileWithRetry(
           userId: user.id,
           email: user.email ?? '',
-          fullName: metadata?['full_name'] ?? 'User',
+          fullName: metadata?['full_name'] ?? metadata?['name'] ?? 'User',
           phone: metadata?['phone'] ?? '',
         );
       }
