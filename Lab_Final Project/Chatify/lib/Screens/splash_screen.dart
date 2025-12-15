@@ -92,6 +92,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -102,219 +104,210 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             ],
           ),
         ),
-        child: Stack(
-          children: [
-            // Background Pattern (subtle)
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.03,
-                child: Container(
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: NetworkImage(
-                        'https://www.transparenttextures.com/patterns/asfalt-light.png',
-                      ),
-                      repeat: ImageRepeat.repeat,
-                      opacity: 0.1,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+        child: SafeArea(
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return FadeTransition(
+                opacity: _fadeAnimation,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Top Spacer
+                      const Expanded(flex: 1, child: SizedBox()),
 
-            // Main Content
-            AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Column(
-                      children: [
-                        // Top Spacer
-                        const Expanded(flex: 1, child: SizedBox()),
-
-                        // Logo and Brand Section
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Logo Container with Glow
-                              Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  // Outer Glow
-                                  Container(
-                                    width: 200,
-                                    height: 200,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.15),
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.white.withOpacity(0.2),
-                                          blurRadius: 40,
-                                          spreadRadius: 15,
-                                        ),
-                                      ],
-                                    ),
+                      // Logo and Brand Section
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Logo Container with Glow
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Outer Glow
+                                Container(
+                                  width: 200,
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.white.withOpacity(0.2),
+                                        blurRadius: 40,
+                                        spreadRadius: 15,
+                                      ),
+                                    ],
                                   ),
+                                ),
 
-                                  // Logo Box
-                                  Container(
-                                    width: 160,
-                                    height: 160,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(40),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.2),
-                                          blurRadius: 30,
-                                          offset: const Offset(0, 15),
+                                // Logo Box
+                                Container(
+                                  width: 160,
+                                  height: 160,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(40),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 30,
+                                        offset: const Offset(0, 15),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      // Chat Icon
+                                      const Center(
+                                        child: Icon(
+                                          Icons.chat_bubble_rounded,
+                                          color: Color(0xFF128C7E),
+                                          size: 85,
                                         ),
-                                      ],
-                                    ),
-                                    child: Stack(
-                                      children: [
-                                        // Chat Icon
-                                        const Center(
-                                          child: Icon(
-                                            Icons.chat_bubble_rounded,
-                                            color: Color(0xFF128C7E),
-                                            size: 85,
-                                          ),
-                                        ),
+                                      ),
 
-                                        // Shine Effect
-                                        Positioned.fill(
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(40),
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                                colors: [
-                                                  Colors.white.withOpacity(0.4),
-                                                  Colors.transparent,
-                                                  Colors.black.withOpacity(0.05),
-                                                ],
-                                                stops: const [0.0, 0.5, 1.0],
-                                              ),
+                                      // Shine Effect
+                                      Positioned.fill(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(40),
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              colors: [
+                                                Colors.white.withOpacity(0.4),
+                                                Colors.transparent,
+                                                Colors.black.withOpacity(0.05),
+                                              ],
+                                              stops: const [0.0, 0.5, 1.0],
                                             ),
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 40),
+
+                            // Brand Text
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // App Name
+                                Text(
+                                  'ChatiFy',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 48,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    letterSpacing: -1.5,
+                                    height: 1.1,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                // Tagline
+                                Text(
+                                  'Connect Instantly',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white.withOpacity(0.95),
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    letterSpacing: 0.5,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Bottom Section
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Loading Spinner
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 28),
+                              width: 36,
+                              height: 36,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3.5,
+                                valueColor: AlwaysStoppedAnimation(
+                                  Colors.white.withOpacity(0.8),
+                                ),
+                                backgroundColor: Colors.white.withOpacity(0.2),
                               ),
+                            ),
 
-                              const SizedBox(height: 40),
-
-                              // Brand Text
-                              Column(
+                            // Version & Copyright
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 48),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  // App Name
                                   Text(
-                                    'ChatiFy',
+                                    'v1.0.0',
+                                    textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      fontSize: 48,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white.withOpacity(0.7),
                                       fontFamily: 'Plus Jakarta Sans',
-                                      letterSpacing: -1.5,
-                                      height: 1.1,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black.withOpacity(0.15),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
+                                      letterSpacing: 2,
                                     ),
                                   ),
-
-                                  const SizedBox(height: 12),
-
-                                  // Tagline
+                                  const SizedBox(height: 4),
                                   Text(
-                                    'Connect Instantly',
+                                    'Checking authentication...',
+                                    textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      fontSize: 20,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.white.withOpacity(0.95),
+                                      color: Colors.white.withOpacity(0.6),
                                       fontFamily: 'Plus Jakarta Sans',
-                                      letterSpacing: 0.5,
-                                      height: 1.2,
                                     ),
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-
-                        // Bottom Section
-                        Expanded(
-                          flex: 1,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              // Loading Spinner
-                              Container(
-                                margin: const EdgeInsets.only(bottom: 28),
-                                width: 36,
-                                height: 36,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3.5,
-                                  valueColor: AlwaysStoppedAnimation(
-                                    Colors.white.withOpacity(0.8),
-                                  ),
-                                  backgroundColor: Colors.white.withOpacity(0.2),
-                                ),
-                              ),
-
-                              // Version & Copyright
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 48),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      'v1.0.0',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white.withOpacity(0.7),
-                                        fontFamily: 'Plus Jakarta Sans',
-                                        letterSpacing: 2,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Checking authentication...',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white.withOpacity(0.6),
-                                        fontFamily: 'Plus Jakarta Sans',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

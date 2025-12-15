@@ -1,4 +1,4 @@
-// lib/services/auth_service.dart (COMPLETE UPDATED VERSION)
+// lib/services/auth_service.dart (FINAL COMPLETE VERSION - APK READY)
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
@@ -12,12 +12,14 @@ class AuthService {
   // Check if user is logged in
   bool get isLoggedIn => currentUser != null;
 
-  // LOGIN WITH GOOGLE (NEW METHOD)
+  // 🔥 LOGIN WITH GOOGLE (FIXED FOR APK) 🔥
+  // NO redirectTo parameter - lets Supabase handle callback automatically
+  // AndroidManifest deep link will catch the callback
   Future<void> loginWithGoogle() async {
     try {
       await _supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: 'io.supabase.chatapp://login-callback/',
+        // ❌ DO NOT add redirectTo here for APK to work!
       );
     } catch (e) {
       print('Google login error: $e');
@@ -25,20 +27,7 @@ class AuthService {
     }
   }
 
-  // SIGN UP with Google
-  Future<void> signUpWithGoogle() async {
-    try {
-      await _supabase.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: 'io.supabase.chatapp://login-callback/',
-      );
-    } catch (e) {
-      print('Google signup error: $e');
-      rethrow;
-    }
-  }
-
-  // CHECK USER PROFILE (NEW METHOD)
+  // CHECK USER PROFILE
   Future<bool> checkUserProfile(String userId) async {
     try {
       final profile = await _supabase
@@ -52,7 +41,6 @@ class AuthService {
       }
 
       // Check if profile has been completed
-      // A profile is considered complete if it has a display_name
       final displayName = profile['display_name'] as String?;
       return displayName != null && displayName.isNotEmpty;
     } catch (e) {
@@ -94,7 +82,6 @@ class AuthService {
           );
         } catch (e) {
           print('Error creating profile (will retry on login): $e');
-          // Don't throw error - profile will be created on first login if missing
         }
       }
 
@@ -124,7 +111,7 @@ class AuthService {
 
         if (existing != null) {
           print('User profile already exists');
-          return; // Profile exists, no need to create
+          return;
         }
 
         // Create new profile
@@ -142,13 +129,13 @@ class AuthService {
         });
 
         print('User profile created successfully');
-        return; // Success
+        return;
       } catch (e) {
         print('Attempt ${i + 1} failed: $e');
         if (i == retries - 1) {
-          rethrow; // Last attempt failed
+          rethrow;
         }
-        await Future.delayed(Duration(seconds: i + 1)); // Wait before retry
+        await Future.delayed(Duration(seconds: i + 1));
       }
     }
   }
@@ -159,11 +146,9 @@ class AuthService {
     if (user == null) return;
 
     try {
-      // Check if profile exists
       final profile = await getUserProfile(user.id);
 
       if (profile == null) {
-        // Profile doesn't exist, create it
         final metadata = user.userMetadata;
         await _createUserProfileWithRetry(
           userId: user.id,
@@ -188,7 +173,6 @@ class AuthService {
         password: password,
       );
 
-      // Ensure user profile exists after login
       if (response.user != null) {
         await ensureUserProfileExists();
       }
@@ -235,7 +219,6 @@ class AuthService {
         token: otp,
       );
 
-      // Ensure profile exists after verification
       if (response.user != null) {
         await ensureUserProfileExists();
       }

@@ -1,7 +1,10 @@
-// lib/Screens/home_screen.dart
+// lib/Screens/home_screen_UPDATED.dart
+
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/auth_service.dart';
+import '../services/chat_service.dart';
+import 'chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,77 +15,22 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
+  final ChatService _chatService = ChatService();
+
   int _selectedTab = 0;
   Map<String, dynamic>? _currentUserProfile;
   bool _isLoadingProfile = true;
-
-  final List<Chat> _chats = [
-    Chat(
-      name: 'Jane Doe',
-      lastMessage: 'Hey, are we still on for lunch?',
-      time: '10:30 AM',
-      unreadCount: 2,
-      isOnline: true,
-      imageUrl: 'https://i.pravatar.cc/150?img=1',
-    ),
-    Chat(
-      name: 'Team Alpha',
-      lastMessage: 'Mark: Please review the design docs.',
-      time: '09:15 AM',
-      unreadCount: 0,
-      isOnline: false,
-      imageUrl: 'https://i.pravatar.cc/150?img=5',
-    ),
-    Chat(
-      name: 'Mom',
-      lastMessage: 'Sent a photo',
-      time: 'Yesterday',
-      unreadCount: 0,
-      isOnline: false,
-      imageUrl: 'https://i.pravatar.cc/150?img=20',
-      hasMedia: true,
-    ),
-    Chat(
-      name: 'John Smith',
-      lastMessage: 'Can we reschedule the meeting?',
-      time: 'Tuesday',
-      unreadCount: 0,
-      isOnline: false,
-      imageUrl: 'https://i.pravatar.cc/150?img=12',
-    ),
-  ];
-
-  final List<User> _users = [
-    User(
-      name: 'Alex Johnson',
-      status: 'Available',
-      isOnline: true,
-      imageUrl: 'https://i.pravatar.cc/150?img=33',
-    ),
-    User(
-      name: 'Sarah Miller',
-      status: 'At work',
-      isOnline: true,
-      imageUrl: 'https://i.pravatar.cc/150?img=44',
-    ),
-    User(
-      name: 'Michael Chen',
-      status: 'Busy',
-      isOnline: true,
-      imageUrl: 'https://i.pravatar.cc/150?img=13',
-    ),
-    User(
-      name: 'Emma Wilson',
-      status: 'Last seen 2h ago',
-      isOnline: false,
-      imageUrl: 'https://i.pravatar.cc/150?img=47',
-    ),
-  ];
+  List<Map<String, dynamic>> _chats = [];
+  List<Map<String, dynamic>> _users = [];
+  bool _isLoadingChats = true;
+  bool _isLoadingUsers = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+    _loadChats();
+    _loadUsers();
   }
 
   Future<void> _loadUserProfile() async {
@@ -99,6 +47,36 @@ class _HomeScreenState extends State<HomeScreen> {
       print('Error loading profile: $e');
       setState(() {
         _isLoadingProfile = false;
+      });
+    }
+  }
+
+  Future<void> _loadChats() async {
+    try {
+      final chats = await _chatService.getUserChats();
+      setState(() {
+        _chats = chats;
+        _isLoadingChats = false;
+      });
+    } catch (e) {
+      print('Error loading chats: $e');
+      setState(() {
+        _isLoadingChats = false;
+      });
+    }
+  }
+
+  Future<void> _loadUsers() async {
+    try {
+      final users = await _chatService.getAllUsers();
+      setState(() {
+        _users = users;
+        _isLoadingUsers = false;
+      });
+    } catch (e) {
+      print('Error loading users: $e');
+      setState(() {
+        _isLoadingUsers = false;
       });
     }
   }
@@ -145,11 +123,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 20),
               ListTile(
-                leading: const Icon(Icons.group_add, color: Color(0xFF128C7E)),
-                title: const Text('New Group'),
+                leading: const Icon(Icons.refresh, color: Color(0xFF128C7E)),
+                title: const Text('Refresh'),
                 onTap: () {
                   Navigator.pop(context);
-                  // Handle new group
+                  _loadChats();
+                  _loadUsers();
                 },
               ),
               ListTile(
@@ -157,7 +136,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 title: const Text('Settings'),
                 onTap: () {
                   Navigator.pop(context);
-                  // Handle settings
                 },
               ),
               ListTile(
@@ -188,16 +166,51 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _handleChatTap(Map<String, dynamic> chat) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          chatId: chat['chat_id'],
+          otherUserId: chat['other_user_id'],
+          otherUserName: chat['other_user_name'],
+          otherUserAvatar: chat['other_user_avatar'] ?? '',
+          otherUserStatus: chat['other_user_status'] ?? 'Offline',
+        ),
+      ),
+    ).then((_) {
+      // Refresh chats when coming back
+      _loadChats();
+    });
+  }
+
+  Future<void> _handleUserTap(Map<String, dynamic> user) async {
+    // Create or get chat with this user
+    final chatId = await _chatService.createOrGetChat(user['id']);
+
+    if (chatId != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatScreen(
+            chatId: chatId,
+            otherUserId: user['id'],
+            otherUserName: user['display_name'] ?? 'User',
+            otherUserAvatar: user['avatar_url'] ?? '',
+            otherUserStatus: user['status'] ?? 'Offline',
+          ),
+        ),
+      ).then((_) {
+        _loadChats();
+      });
+    }
+  }
+
   void _handleNewChat() {
-    // Navigate to create new chat
-  }
-
-  void _handleChatTap(Chat chat) {
-    // Navigate to chat screen
-  }
-
-  void _handleUserTap(User user) {
-    // Start chat with user
+    // Show users list to start new chat
+    setState(() {
+      _selectedTab = 1; // Switch to USERS tab
+    });
   }
 
   @override
@@ -222,13 +235,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Column(
               children: [
-                // App Bar with Profile Icon
+                // App Bar
                 Padding(
                   padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // App Title
                       Text(
                         'ChatiFy',
                         style: TextStyle(
@@ -239,35 +251,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           letterSpacing: -0.5,
                         ),
                       ),
-
-                      // Action Buttons
                       Row(
                         children: [
-                          // Search Button
                           IconButton(
                             onPressed: _handleSearch,
                             icon: const Icon(Icons.search, size: 24),
                             color: Colors.white,
-                            style: IconButton.styleFrom(
-                              shape: const CircleBorder(),
-                              minimumSize: const Size(40, 40),
-                            ),
                           ),
-
-                          // More Options Button
                           IconButton(
                             onPressed: _handleMoreOptions,
                             icon: const Icon(Icons.more_vert, size: 24),
                             color: Colors.white,
-                            style: IconButton.styleFrom(
-                              shape: const CircleBorder(),
-                              minimumSize: const Size(40, 40),
-                            ),
                           ),
-
                           const SizedBox(width: 4),
-
-                          // Profile Icon
                           GestureDetector(
                             onTap: _handleProfileTap,
                             child: Container(
@@ -275,10 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               height: 36,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
+                                border: Border.all(color: Colors.white, width: 2),
                                 image: _currentUserProfile?['avatar_url'] != null &&
                                     _currentUserProfile!['avatar_url'].isNotEmpty
                                     ? DecorationImage(
@@ -290,11 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               child: _currentUserProfile?['avatar_url'] == null ||
                                   _currentUserProfile!['avatar_url'].isEmpty
-                                  ? const Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 20,
-                              )
+                                  ? const Icon(Icons.person, color: Colors.white, size: 20)
                                   : null,
                             ),
                           ),
@@ -326,7 +315,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
 
-      // Floating Action Button
       floatingActionButton: FloatingActionButton(
         onPressed: _handleNewChat,
         backgroundColor: primaryColor,
@@ -335,13 +323,11 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 8,
         child: const Icon(Icons.chat_bubble, size: 26),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   Widget _buildTab(int index, String label) {
     final isActive = _selectedTab == index;
-
     return Expanded(
       child: GestureDetector(
         onTap: () => _handleTabChange(index),
@@ -388,17 +374,61 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildChatsList() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ListView.builder(
-      itemCount: _chats.length,
-      padding: const EdgeInsets.only(bottom: 80),
-      itemBuilder: (context, index) {
-        final chat = _chats[index];
-        return _buildChatItem(chat, isDark);
-      },
+    if (_isLoadingChats) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_chats.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.chat_bubble_outline,
+              size: 64,
+              color: isDark ? const Color(0xFF4B5563) : const Color(0xFFD1D5DB),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No chats yet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : const Color(0xFF111717),
+                fontFamily: 'Plus Jakarta Sans',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tap + to start a new chat',
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+                fontFamily: 'Plus Jakarta Sans',
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadChats,
+      child: ListView.builder(
+        itemCount: _chats.length,
+        padding: const EdgeInsets.only(bottom: 80),
+        itemBuilder: (context, index) {
+          final chat = _chats[index];
+          return _buildChatItem(chat, isDark);
+        },
+      ),
     );
   }
 
-  Widget _buildChatItem(Chat chat, bool isDark) {
+  Widget _buildChatItem(Map<String, dynamic> chat, bool isDark) {
+    final unreadCount = chat['unread_count'] ?? 0;
+    final lastMessage = chat['last_message'] ?? '';
+
     return Material(
       color: isDark ? const Color(0xFF11211F) : Colors.white,
       child: InkWell(
@@ -422,29 +452,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 48,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      image: DecorationImage(
-                        image: NetworkImage(chat.imageUrl),
+                      image: chat['other_user_avatar'] != null &&
+                          chat['other_user_avatar'].isNotEmpty
+                          ? DecorationImage(
+                        image: NetworkImage(chat['other_user_avatar']),
                         fit: BoxFit.cover,
-                      ),
+                      )
+                          : null,
+                      color: const Color(0xFF128C7E).withOpacity(0.1),
                     ),
+                    child: chat['other_user_avatar'] == null ||
+                        chat['other_user_avatar'].isEmpty
+                        ? const Icon(Icons.person, color: Color(0xFF128C7E))
+                        : null,
                   ),
-                  if (chat.isOnline)
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF25D366),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDark ? const Color(0xFF11211F) : Colors.white,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
               const SizedBox(width: 16),
@@ -457,7 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            chat.name,
+                            chat['other_user_name'] ?? 'User',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -468,17 +489,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Text(
-                          chat.time,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: chat.unreadCount > 0
-                                ? const Color(0xFF128C7E)
-                                : isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
-                            fontFamily: 'Plus Jakarta Sans',
+                        if (chat['last_message_time'] != null)
+                          Text(
+                            _formatTime(chat['last_message_time']),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: unreadCount > 0
+                                  ? const Color(0xFF128C7E)
+                                  : isDark
+                                  ? const Color(0xFF9CA3AF)
+                                  : const Color(0xFF6B7280),
+                              fontFamily: 'Plus Jakarta Sans',
+                            ),
                           ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -487,12 +510,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            chat.lastMessage,
+                            lastMessage.isEmpty ? 'Start chatting' : lastMessage,
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: chat.unreadCount > 0
-                                  ? FontWeight.w500
-                                  : FontWeight.w400,
+                              fontWeight: unreadCount > 0 ? FontWeight.w500 : FontWeight.w400,
                               color: isDark
                                   ? const Color(0xFF9CA3AF)
                                   : const Color(0xFF6B7280),
@@ -502,18 +523,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (chat.unreadCount > 0)
+                        if (unreadCount > 0)
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: const Color(0xFF128C7E),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              chat.unreadCount.toString(),
+                              unreadCount.toString(),
                               style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
@@ -537,17 +555,39 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildUsersList() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ListView.builder(
-      itemCount: _users.length,
-      padding: const EdgeInsets.only(bottom: 80),
-      itemBuilder: (context, index) {
-        final user = _users[index];
-        return _buildUserItem(user, isDark);
-      },
+    if (_isLoadingUsers) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_users.isEmpty) {
+      return Center(
+        child: Text(
+          'No users found',
+          style: TextStyle(
+            fontSize: 16,
+            color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+            fontFamily: 'Plus Jakarta Sans',
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadUsers,
+      child: ListView.builder(
+        itemCount: _users.length,
+        padding: const EdgeInsets.only(bottom: 80),
+        itemBuilder: (context, index) {
+          final user = _users[index];
+          return _buildUserItem(user, isDark);
+        },
+      ),
     );
   }
 
-  Widget _buildUserItem(User user, bool isDark) {
+  Widget _buildUserItem(Map<String, dynamic> user, bool isDark) {
+    final isOnline = user['status'] != 'Offline';
+
     return Material(
       color: isDark ? const Color(0xFF11211F) : Colors.white,
       child: InkWell(
@@ -571,11 +611,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 48,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      image: DecorationImage(
-                        image: NetworkImage(user.imageUrl),
+                      image: user['avatar_url'] != null && user['avatar_url'].isNotEmpty
+                          ? DecorationImage(
+                        image: NetworkImage(user['avatar_url']),
                         fit: BoxFit.cover,
-                      ),
+                      )
+                          : null,
+                      color: const Color(0xFF128C7E).withOpacity(0.1),
                     ),
+                    child: user['avatar_url'] == null || user['avatar_url'].isEmpty
+                        ? const Icon(Icons.person, color: Color(0xFF128C7E))
+                        : null,
                   ),
                   Positioned(
                     right: 0,
@@ -584,9 +630,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 14,
                       height: 14,
                       decoration: BoxDecoration(
-                        color: user.isOnline
-                            ? const Color(0xFF25D366)
-                            : const Color(0xFF9CA3AF),
+                        color: isOnline ? const Color(0xFF25D366) : const Color(0xFF9CA3AF),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark ? const Color(0xFF11211F) : Colors.white,
@@ -603,7 +647,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user.name,
+                      user['display_name'] ?? 'User',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -613,10 +657,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      user.status,
+                      user['status'] ?? 'Offline',
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w400,
                         color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
                         fontFamily: 'Plus Jakarta Sans',
                       ),
@@ -642,7 +685,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCallsList() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -657,7 +699,6 @@ class _HomeScreenState extends State<HomeScreen> {
             'Calls feature coming soon',
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w500,
               color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
               fontFamily: 'Plus Jakarta Sans',
             ),
@@ -666,40 +707,29 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
 
-class Chat {
-  final String name;
-  final String lastMessage;
-  final String time;
-  final int unreadCount;
-  final bool isOnline;
-  final String imageUrl;
-  final bool hasMedia;
+  String _formatTime(String? timestamp) {
+    if (timestamp == null) return '';
+    try {
+      final dateTime = DateTime.parse(timestamp);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
 
-  Chat({
-    required this.name,
-    required this.lastMessage,
-    required this.time,
-    required this.unreadCount,
-    required this.isOnline,
-    required this.imageUrl,
-    this.hasMedia = false,
-  });
-}
-
-class User {
-  final String name;
-  final String status;
-  final bool isOnline;
-  final String imageUrl;
-
-  User({
-    required this.name,
-    required this.status,
-    required this.isOnline,
-    required this.imageUrl,
-  });
+      if (difference.inMinutes < 1) {
+        return 'Now';
+      } else if (difference.inHours < 1) {
+        return '${difference.inMinutes}m';
+      } else if (difference.inDays < 1) {
+        return '${difference.inHours}h';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays}d';
+      } else {
+        return '${dateTime.day}/${dateTime.month}';
+      }
+    } catch (e) {
+      return '';
+    }
+  }
 }
 
 class ChatSearchDelegate extends SearchDelegate {
@@ -707,9 +737,7 @@ class ChatSearchDelegate extends SearchDelegate {
   List<Widget> buildActions(BuildContext context) {
     return [
       IconButton(
-        onPressed: () {
-          query = '';
-        },
+        onPressed: () => query = '',
         icon: const Icon(Icons.clear),
       ),
     ];
@@ -718,9 +746,7 @@ class ChatSearchDelegate extends SearchDelegate {
   @override
   Widget buildLeading(BuildContext context) {
     return IconButton(
-      onPressed: () {
-        close(context, null);
-      },
+      onPressed: () => close(context, null),
       icon: const Icon(Icons.arrow_back),
     );
   }

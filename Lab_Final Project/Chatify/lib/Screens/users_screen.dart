@@ -1,7 +1,10 @@
-// lib/Screens/users_screen.dart
+// lib/Screens/users_screen.dart (REAL-TIME VERSION)
+
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/auth_service.dart';
+import '../services/chat_service.dart';
+import 'chat_screen.dart';
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
@@ -12,77 +15,30 @@ class UsersScreen extends StatefulWidget {
 
 class _UsersScreenState extends State<UsersScreen> {
   final AuthService _authService = AuthService();
+  final ChatService _chatService = ChatService();
   final TextEditingController _searchController = TextEditingController();
+
   Map<String, dynamic>? _currentUserProfile;
   bool _isLoadingProfile = true;
+  bool _isLoadingUsers = true;
   String _searchQuery = '';
 
-  final List<User> _allUsers = [
-    User(
-      name: 'Alex Johnson',
-      status: 'Available',
-      about: 'Software Developer at Tech Corp',
-      isOnline: true,
-      imageUrl: 'https://i.pravatar.cc/150?img=33',
-    ),
-    User(
-      name: 'Sarah Miller',
-      status: 'At work',
-      about: 'Product Designer | UX Enthusiast',
-      isOnline: true,
-      imageUrl: 'https://i.pravatar.cc/150?img=44',
-    ),
-    User(
-      name: 'Michael Chen',
-      status: 'Busy',
-      about: 'Project Manager',
-      isOnline: true,
-      imageUrl: 'https://i.pravatar.cc/150?img=13',
-    ),
-    User(
-      name: 'Emma Wilson',
-      status: 'Last seen 2h ago',
-      about: 'Marketing Specialist',
-      isOnline: false,
-      imageUrl: 'https://i.pravatar.cc/150?img=47',
-    ),
-    User(
-      name: 'Robert Garcia',
-      status: 'Available',
-      about: 'UX Researcher',
-      isOnline: true,
-      imageUrl: 'https://i.pravatar.cc/150?img=15',
-    ),
-    User(
-      name: 'Lisa Taylor',
-      status: 'Away',
-      about: 'Frontend Developer',
-      isOnline: false,
-      imageUrl: 'https://i.pravatar.cc/150?img=26',
-    ),
-    User(
-      name: 'David Kim',
-      status: 'Busy',
-      about: 'Mobile App Developer',
-      isOnline: true,
-      imageUrl: 'https://i.pravatar.cc/150?img=60',
-    ),
-    User(
-      name: 'Sophia Lee',
-      status: 'Available',
-      about: 'Data Scientist',
-      isOnline: true,
-      imageUrl: 'https://i.pravatar.cc/150?img=25',
-    ),
-  ];
+  // Real users from database
+  List<Map<String, dynamic>> _allUsers = [];
 
-  List<User> get _filteredUsers {
+  List<Map<String, dynamic>> get _filteredUsers {
     if (_searchQuery.isEmpty) {
       return _allUsers;
     }
     return _allUsers.where((user) {
-      return user.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          user.about.toLowerCase().contains(_searchQuery.toLowerCase());
+      final name = user['display_name']?.toString().toLowerCase() ?? '';
+      final about = user['about']?.toString().toLowerCase() ?? '';
+      final email = user['email']?.toString().toLowerCase() ?? '';
+      final query = _searchQuery.toLowerCase();
+
+      return name.contains(query) ||
+          about.contains(query) ||
+          email.contains(query);
     }).toList();
   }
 
@@ -90,6 +46,7 @@ class _UsersScreenState extends State<UsersScreen> {
   void initState() {
     super.initState();
     _loadUserProfile();
+    _loadUsers();
   }
 
   @override
@@ -98,21 +55,51 @@ class _UsersScreenState extends State<UsersScreen> {
     super.dispose();
   }
 
+  // Load current user profile
   Future<void> _loadUserProfile() async {
     try {
       final user = _authService.currentUser;
       if (user != null) {
         final profile = await _authService.getUserProfile(user.id);
-        setState(() {
-          _currentUserProfile = profile;
-          _isLoadingProfile = false;
-        });
+        if (mounted) {
+          setState(() {
+            _currentUserProfile = profile;
+            _isLoadingProfile = false;
+          });
+        }
       }
     } catch (e) {
       print('Error loading profile: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingProfile = false;
+        });
+      }
+    }
+  }
+
+  // Load all users from database (excluding current user)
+  Future<void> _loadUsers() async {
+    try {
       setState(() {
-        _isLoadingProfile = false;
+        _isLoadingUsers = true;
       });
+
+      final users = await _chatService.getAllUsers();
+
+      if (mounted) {
+        setState(() {
+          _allUsers = users;
+          _isLoadingUsers = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading users: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingUsers = false;
+        });
+      }
     }
   }
 
@@ -155,7 +142,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 title: const Text('Refresh Users'),
                 onTap: () {
                   Navigator.pop(context);
-                  _loadUserProfile();
+                  _loadUsers();
                 },
               ),
               ListTile(
@@ -171,7 +158,9 @@ class _UsersScreenState extends State<UsersScreen> {
                 onTap: () async {
                   Navigator.pop(context);
                   await _authService.logout();
-                  NavigationHelper.navigateToLogin(context);
+                  if (mounted) {
+                    NavigationHelper.navigateToLogin(context);
+                  }
                 },
               ),
               const SizedBox(height: 20),
@@ -193,7 +182,8 @@ class _UsersScreenState extends State<UsersScreen> {
     }
   }
 
-  void _handleUserTap(User user) {
+  // Handle user tap - create/open chat
+  Future<void> _handleUserTap(Map<String, dynamic> user) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
@@ -231,19 +221,29 @@ class _UsersScreenState extends State<UsersScreen> {
                       height: 80,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image: NetworkImage(user.imageUrl),
+                        image: user['avatar_url'] != null && user['avatar_url'].isNotEmpty
+                            ? DecorationImage(
+                          image: NetworkImage(user['avatar_url']),
                           fit: BoxFit.cover,
-                        ),
+                        )
+                            : null,
+                        color: const Color(0xFF128C7E).withOpacity(0.1),
                         border: Border.all(
                           color: const Color(0xFF128C7E),
                           width: 3,
                         ),
                       ),
+                      child: user['avatar_url'] == null || user['avatar_url'].isEmpty
+                          ? const Icon(
+                        Icons.person,
+                        size: 40,
+                        color: Color(0xFF128C7E),
+                      )
+                          : null,
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      user.name,
+                      user['display_name'] ?? 'User',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -253,7 +253,7 @@ class _UsersScreenState extends State<UsersScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      user.about,
+                      user['about'] ?? 'Hey there! I am using ChatiFy.',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
@@ -266,17 +266,19 @@ class _UsersScreenState extends State<UsersScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: user.isOnline
+                        color: _isUserOnline(user)
                             ? const Color(0xFF25D366).withOpacity(0.1)
                             : const Color(0xFF9CA3AF).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        user.status,
+                        user['status'] ?? 'Available',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: user.isOnline ? const Color(0xFF25D366) : const Color(0xFF9CA3AF),
+                          color: _isUserOnline(user)
+                              ? const Color(0xFF25D366)
+                              : const Color(0xFF9CA3AF),
                           fontFamily: 'Plus Jakarta Sans',
                         ),
                       ),
@@ -288,9 +290,9 @@ class _UsersScreenState extends State<UsersScreen> {
               ListTile(
                 leading: const Icon(Icons.message, color: Color(0xFF128C7E)),
                 title: const Text('Send Message'),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
-                  // Navigate to chat
+                  await _startChat(user);
                 },
               ),
               ListTile(
@@ -298,7 +300,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 title: const Text('Voice Call'),
                 onTap: () {
                   Navigator.pop(context);
-                  // Start voice call
+                  _showComingSoon('Voice Call');
                 },
               ),
               ListTile(
@@ -306,7 +308,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 title: const Text('Video Call'),
                 onTap: () {
                   Navigator.pop(context);
-                  // Start video call
+                  _showComingSoon('Video Call');
                 },
               ),
               const SizedBox(height: 20),
@@ -315,6 +317,82 @@ class _UsersScreenState extends State<UsersScreen> {
         );
       },
     );
+  }
+
+  // Start chat with user
+  Future<void> _startChat(Map<String, dynamic> user) async {
+    try {
+      // Show loading
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Opening chat...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+
+      // Create or get chat
+      final chatId = await _chatService.createOrGetChat(user['id']);
+
+      if (chatId != null && mounted) {
+        // Navigate to chat screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              chatId: chatId,
+              otherUserId: user['id'],
+              otherUserName: user['display_name'] ?? 'User',
+              otherUserAvatar: user['avatar_url'] ?? '',
+              otherUserStatus: user['status'] ?? 'Available',
+            ),
+          ),
+        );
+      } else {
+        _showError('Failed to create chat');
+      }
+    } catch (e) {
+      print('Error starting chat: $e');
+      _showError('Failed to start chat');
+    }
+  }
+
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature coming soon!'),
+        backgroundColor: const Color(0xFF128C7E),
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Check if user is online (based on last_seen)
+  bool _isUserOnline(Map<String, dynamic> user) {
+    final lastSeen = user['last_seen'];
+    if (lastSeen == null) return false;
+
+    try {
+      final lastSeenTime = DateTime.parse(lastSeen);
+      final now = DateTime.now();
+      final difference = now.difference(lastSeenTime);
+
+      // Consider online if last seen within 5 minutes
+      return difference.inMinutes < 5;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override
@@ -339,24 +417,17 @@ class _UsersScreenState extends State<UsersScreen> {
             ),
             child: Column(
               children: [
-                // App Bar with Profile Icon
+                // App Bar
                 Padding(
                   padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Back Button
                       IconButton(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.arrow_back, size: 24),
                         color: Colors.white,
-                        style: IconButton.styleFrom(
-                          shape: const CircleBorder(),
-                          minimumSize: const Size(40, 40),
-                        ),
                       ),
-
-                      // Title
                       Text(
                         'Find Users',
                         style: TextStyle(
@@ -364,27 +435,16 @@ class _UsersScreenState extends State<UsersScreen> {
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                           fontFamily: 'Plus Jakarta Sans',
-                          letterSpacing: -0.5,
                         ),
                       ),
-
-                      // Action Buttons
                       Row(
                         children: [
-                          // More Options Button
                           IconButton(
                             onPressed: _handleMoreOptions,
                             icon: const Icon(Icons.more_vert, size: 24),
                             color: Colors.white,
-                            style: IconButton.styleFrom(
-                              shape: const CircleBorder(),
-                              minimumSize: const Size(40, 40),
-                            ),
                           ),
-
                           const SizedBox(width: 4),
-
-                          // Profile Icon
                           GestureDetector(
                             onTap: _handleProfileTap,
                             child: Container(
@@ -392,10 +452,7 @@ class _UsersScreenState extends State<UsersScreen> {
                               height: 36,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
+                                border: Border.all(color: Colors.white, width: 2),
                                 image: _currentUserProfile?['avatar_url'] != null &&
                                     _currentUserProfile!['avatar_url'].isNotEmpty
                                     ? DecorationImage(
@@ -407,11 +464,7 @@ class _UsersScreenState extends State<UsersScreen> {
                               ),
                               child: _currentUserProfile?['avatar_url'] == null ||
                                   _currentUserProfile!['avatar_url'].isEmpty
-                                  ? const Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 20,
-                              )
+                                  ? const Icon(Icons.person, color: Colors.white, size: 20)
                                   : null,
                             ),
                           ),
@@ -477,15 +530,20 @@ class _UsersScreenState extends State<UsersScreen> {
           Expanded(
             child: Container(
               color: isDark ? const Color(0xFF11211F) : Colors.white,
-              child: _filteredUsers.isEmpty
+              child: _isLoadingUsers
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredUsers.isEmpty
                   ? _buildEmptyState(isDark)
-                  : ListView.builder(
-                itemCount: _filteredUsers.length,
-                padding: const EdgeInsets.only(bottom: 20),
-                itemBuilder: (context, index) {
-                  final user = _filteredUsers[index];
-                  return _buildUserItem(user, isDark);
-                },
+                  : RefreshIndicator(
+                onRefresh: _loadUsers,
+                child: ListView.builder(
+                  itemCount: _filteredUsers.length,
+                  padding: const EdgeInsets.only(bottom: 20),
+                  itemBuilder: (context, index) {
+                    final user = _filteredUsers[index];
+                    return _buildUserItem(user, isDark);
+                  },
+                ),
               ),
             ),
           ),
@@ -494,7 +552,9 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  Widget _buildUserItem(User user, bool isDark) {
+  Widget _buildUserItem(Map<String, dynamic> user, bool isDark) {
+    final isOnline = _isUserOnline(user);
+
     return Material(
       color: isDark ? const Color(0xFF11211F) : Colors.white,
       child: InkWell(
@@ -519,11 +579,17 @@ class _UsersScreenState extends State<UsersScreen> {
                     height: 52,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      image: DecorationImage(
-                        image: NetworkImage(user.imageUrl),
+                      image: user['avatar_url'] != null && user['avatar_url'].isNotEmpty
+                          ? DecorationImage(
+                        image: NetworkImage(user['avatar_url']),
                         fit: BoxFit.cover,
-                      ),
+                      )
+                          : null,
+                      color: const Color(0xFF128C7E).withOpacity(0.1),
                     ),
+                    child: user['avatar_url'] == null || user['avatar_url'].isEmpty
+                        ? const Icon(Icons.person, color: Color(0xFF128C7E))
+                        : null,
                   ),
                   Positioned(
                     right: 0,
@@ -532,9 +598,7 @@ class _UsersScreenState extends State<UsersScreen> {
                       width: 16,
                       height: 16,
                       decoration: BoxDecoration(
-                        color: user.isOnline
-                            ? const Color(0xFF25D366)
-                            : const Color(0xFF9CA3AF),
+                        color: isOnline ? const Color(0xFF25D366) : const Color(0xFF9CA3AF),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark ? const Color(0xFF11211F) : Colors.white,
@@ -554,7 +618,7 @@ class _UsersScreenState extends State<UsersScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user.name,
+                      user['display_name'] ?? 'User',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -566,7 +630,7 @@ class _UsersScreenState extends State<UsersScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      user.about,
+                      user['about'] ?? 'Hey there! I am using ChatiFy.',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
@@ -578,11 +642,11 @@ class _UsersScreenState extends State<UsersScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      user.status,
+                      user['status'] ?? 'Available',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: user.isOnline ? const Color(0xFF25D366) : const Color(0xFF9CA3AF),
+                        color: isOnline ? const Color(0xFF25D366) : const Color(0xFF9CA3AF),
                         fontFamily: 'Plus Jakarta Sans',
                       ),
                     ),
@@ -592,13 +656,12 @@ class _UsersScreenState extends State<UsersScreen> {
 
               // Message button
               IconButton(
-                onPressed: () => _handleUserTap(user),
+                onPressed: () => _startChat(user),
                 icon: const Icon(Icons.message_rounded, size: 22),
                 color: const Color(0xFF128C7E),
                 style: IconButton.styleFrom(
                   backgroundColor: const Color(0xFF128C7E).withOpacity(0.1),
                   shape: const CircleBorder(),
-                  minimumSize: const Size(40, 40),
                 ),
               ),
             ],
@@ -631,11 +694,10 @@ class _UsersScreenState extends State<UsersScreen> {
           const SizedBox(height: 8),
           Text(
             _searchQuery.isEmpty
-                ? 'Start searching to find users'
+                ? 'No registered users yet'
                 : 'Try a different search term',
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w400,
               color: isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
               fontFamily: 'Plus Jakarta Sans',
             ),
@@ -644,20 +706,4 @@ class _UsersScreenState extends State<UsersScreen> {
       ),
     );
   }
-}
-
-class User {
-  final String name;
-  final String status;
-  final String about;
-  final bool isOnline;
-  final String imageUrl;
-
-  User({
-    required this.name,
-    required this.status,
-    required this.about,
-    required this.isOnline,
-    required this.imageUrl,
-  });
 }
