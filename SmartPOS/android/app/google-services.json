@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "732422342282",
+    "project_id": "smartpos-e290e",
+    "storage_bucket": "smartpos-e290e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:732422342282:android:63aeb66427454e4de20f73",
+        "android_client_info": {
+          "package_name": "com.example.smartpos"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "732422342282-qlh8rih9doudbe34aciga15j16k7g65p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.smartpos",
+            "certificate_hash": "aa49cf04d2722688f66ea043003e843b28457e95"
+          }
+        },
+        {
+          "client_id": "732422342282-0nohdj18sjlkav6n520iqcad5cbl8fh4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAA_el7l117nTkb8VQNCbPIZprfz6CmuSA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "732422342282-0nohdj18sjlkav6n520iqcad5cbl8fh4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
