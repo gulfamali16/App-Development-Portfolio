@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../config/routes.dart';
+import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
@@ -20,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _rememberMe = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -91,10 +92,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppTheme.backgroundDark,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          padding: const EdgeInsets.all(24),
           child: Consumer<AuthProvider>(
             builder: (context, authProvider, child) {
               return Form(
@@ -104,142 +105,263 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const SizedBox(height: 40),
                     
-                    // App logo
+                    // Logo
                     Center(
                       child: Container(
-                        width: 100,
-                        height: 100,
+                        width: 80,
+                        height: 80,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor,
-                          borderRadius: BorderRadius.circular(20),
+                          shape: BoxShape.circle,
+                          color: AppTheme.surfaceDark,
+                          border: Border.all(
+                            color: AppTheme.primaryGreen.withOpacity(0.3),
+                            width: 2,
+                          ),
                         ),
                         child: const Icon(
-                          Icons.point_of_sale,
-                          size: 50,
-                          color: Colors.white,
+                          Icons.bolt,
+                          size: 40,
+                          color: AppTheme.primaryGreen,
                         ),
                       ),
                     ),
                     const SizedBox(height: 32),
                     
                     // Welcome text
-                    Text(
-                      'Welcome Back!',
-                      style: Theme.of(context).textTheme.displaySmall,
+                    const Text(
+                      'Welcome Back',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Sign in to continue',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      'Log in to your POS dashboard',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 16,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 40),
                     
                     // Email field
-                    CustomTextField(
+                    TextFormField(
                       controller: _emailController,
-                      label: 'Email',
-                      hint: 'Enter your email',
                       keyboardType: TextInputType.emailAddress,
-                      prefixIcon: const Icon(Icons.email_outlined),
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Email Address',
+                        hintText: 'Enter your email',
+                        prefixIcon: const Icon(Icons.mail_outline, color: AppTheme.textSecondary),
+                        filled: true,
+                        fillColor: AppTheme.surfaceDark,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppTheme.borderDark),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppTheme.borderDark),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppTheme.primaryGreen, width: 2),
+                        ),
+                      ),
                       validator: Validators.validateEmail,
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
                     
                     // Password field
-                    CustomTextField(
+                    TextFormField(
                       controller: _passwordController,
-                      label: 'Password',
-                      hint: 'Enter your password',
-                      obscureText: true,
-                      prefixIcon: const Icon(Icons.lock_outline),
+                      obscureText: _obscurePassword,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        hintText: 'Enter your password',
+                        prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.textSecondary),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            color: AppTheme.textSecondary,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                        filled: true,
+                        fillColor: AppTheme.surfaceDark,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppTheme.borderDark),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppTheme.borderDark),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppTheme.primaryGreen, width: 2),
+                        ),
+                      ),
                       validator: Validators.validatePassword,
                       textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _handleLogin(),
+                      onFieldSubmitted: (_) => _handleLogin(),
                     ),
                     const SizedBox(height: 8),
                     
-                    // Remember me and forgot password row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _rememberMe,
-                              onChanged: (value) {
-                                setState(() {
-                                  _rememberMe = value ?? false;
-                                });
-                              },
-                            ),
-                            const Text('Remember Me'),
-                          ],
+                    // Forgot password link
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.forgotPassword);
+                        },
+                        child: const Text(
+                          'Forgot Password?',
+                          style: TextStyle(
+                            color: AppTheme.primaryGreen,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, AppRoutes.forgotPassword);
-                          },
-                          child: const Text('Forgot Password?'),
-                        ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 24),
                     
                     // Login button
-                    CustomButton(
-                      text: 'Login',
-                      onPressed: _handleLogin,
-                      isLoading: authProvider.isLoading,
+                    SizedBox(
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: authProvider.isLoading ? null : _handleLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryGreen,
+                          foregroundColor: AppTheme.backgroundDark,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: authProvider.isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.backgroundDark),
+                                ),
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Login',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Icon(Icons.arrow_forward, size: 20),
+                                ],
+                              ),
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     
                     // Or divider
                     Row(
                       children: [
-                        const Expanded(child: Divider()),
+                        Expanded(
+                          child: Divider(
+                            color: AppTheme.borderDark,
+                            thickness: 1,
+                          ),
+                        ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
-                            'OR',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            'Or continue with',
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
-                        const Expanded(child: Divider()),
+                        Expanded(
+                          child: Divider(
+                            color: AppTheme.borderDark,
+                            thickness: 1,
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     
                     // Google sign in button
-                    OutlinedButton.icon(
-                      onPressed: authProvider.isLoading ? null : _handleGoogleSignIn,
-                      icon: Image.network(
-                        'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
-                        height: 24,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata),
-                      ),
-                      label: const Text('Sign in with Google'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                    SizedBox(
+                      height: 56,
+                      child: OutlinedButton.icon(
+                        onPressed: authProvider.isLoading ? null : _handleGoogleSignIn,
+                        icon: Image.network(
+                          'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                          height: 24,
+                          errorBuilder: (context, error, stackTrace) => 
+                            const Icon(Icons.g_mobiledata, color: Colors.white),
+                        ),
+                        label: const Text(
+                          'Sign in with Google',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppTheme.borderDark),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     
                     // Sign up link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text("Don't have an account? "),
+                        Text(
+                          "Don't have an account? ",
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
                         TextButton(
                           onPressed: () {
                             Navigator.pushReplacementNamed(context, AppRoutes.signup);
                           },
-                          child: const Text('Sign Up'),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(0, 0),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            'Sign Up',
+                            style: TextStyle(
+                              color: AppTheme.primaryGreen,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ],
                     ),

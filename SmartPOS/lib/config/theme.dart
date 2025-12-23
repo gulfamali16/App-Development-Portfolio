@@ -2,48 +2,57 @@ import 'package:flutter/material.dart';
 
 /// App theme configuration with POS-themed colors (blues and greens for business/money)
 class AppTheme {
-  // Primary colors - Professional blue for business
-  static const Color primaryColor = Color(0xFF1976D2); // Professional blue
+  // Primary Colors (Velocity POS theme)
+  static const Color primaryGreen = Color(0xFF2BEE79);
+  static const Color primaryBlue = Color(0xFF137FEC);
+  
+  // Background Colors (Dark theme)
+  static const Color backgroundDark = Color(0xFF102217);
+  static const Color surfaceDark = Color(0xFF1A2E22);
+  static const Color surfaceHighlight = Color(0xFF233648);
+  static const Color surfaceDark2 = Color(0xFF193324);
+  
+  // Border Colors
+  static const Color borderDark = Color(0xFF326747);
+  
+  // Text Colors
+  static const Color textSecondary = Color(0xFF92C9A8);
+  static const Color textPrimary = Colors.white;
+  
+  // Legacy colors (kept for compatibility)
+  static const Color primaryColor = primaryGreen;
   static const Color primaryDarkColor = Color(0xFF0D47A1);
   static const Color primaryLightColor = Color(0xFF42A5F5);
-  
-  // Accent colors - Green for money/success
-  static const Color accentColor = Color(0xFF4CAF50); // Success green
+  static const Color accentColor = Color(0xFF4CAF50);
   static const Color accentDarkColor = Color(0xFF388E3C);
   static const Color accentLightColor = Color(0xFF81C784);
-  
-  // Background colors
-  static const Color backgroundColor = Color(0xFFF5F5F5);
-  static const Color surfaceColor = Colors.white;
+  static const Color backgroundColor = backgroundDark;
+  static const Color surfaceColor = surfaceDark;
   static const Color errorColor = Color(0xFFE53935);
-  
-  // Text colors
-  static const Color textPrimaryColor = Color(0xFF212121);
-  static const Color textSecondaryColor = Color(0xFF757575);
-  static const Color textDisabledColor = Color(0xFFBDBDBD);
-  
-  // Border colors
-  static const Color borderColor = Color(0xFFE0E0E0);
-  static const Color dividerColor = Color(0xFFBDBDBD);
+  static const Color textPrimaryColor = textPrimary;
+  static const Color textSecondaryColor = textSecondary;
+  static const Color textDisabledColor = Color(0xFF6B7280);
+  static const Color borderColor = borderDark;
+  static const Color dividerColor = borderDark;
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      primaryColor: primaryColor,
-      scaffoldBackgroundColor: backgroundColor,
-      colorScheme: const ColorScheme.light(
-        primary: primaryColor,
-        secondary: accentColor,
+      primaryColor: primaryGreen,
+      scaffoldBackgroundColor: backgroundDark,
+      colorScheme: const ColorScheme.dark(
+        primary: primaryGreen,
+        secondary: primaryBlue,
         error: errorColor,
-        surface: surfaceColor,
-        background: backgroundColor,
+        surface: surfaceDark,
+        background: backgroundDark,
       ),
       
       // AppBar theme
       appBarTheme: const AppBarTheme(
-        backgroundColor: primaryColor,
+        backgroundColor: surfaceDark,
         foregroundColor: Colors.white,
-        elevation: 2,
+        elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
           color: Colors.white,
@@ -55,42 +64,42 @@ class AppTheme {
       // Input decoration theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        fillColor: surfaceDark,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: borderColor),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: borderDark),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: borderColor),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: borderDark),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: primaryGreen, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: errorColor),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: errorColor, width: 2),
         ),
-        labelStyle: const TextStyle(color: textSecondaryColor),
+        labelStyle: const TextStyle(color: textSecondary),
         hintStyle: const TextStyle(color: textDisabledColor),
       ),
       
       // Elevated button theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 50),
+          backgroundColor: primaryGreen,
+          foregroundColor: backgroundDark,
+          minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(28),
           ),
-          elevation: 2,
+          elevation: 0,
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -101,7 +110,7 @@ class AppTheme {
       // Text button theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
+          foregroundColor: primaryGreen,
           textStyle: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -120,35 +129,35 @@ class AppTheme {
         displayLarge: TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.bold,
-          color: textPrimaryColor,
+          color: textPrimary,
         ),
         displayMedium: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
-          color: textPrimaryColor,
+          color: textPrimary,
         ),
         displaySmall: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
-          color: textPrimaryColor,
+          color: textPrimary,
         ),
         headlineMedium: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: textPrimaryColor,
+          color: textPrimary,
         ),
         titleLarge: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          color: textPrimaryColor,
+          color: textPrimary,
         ),
         bodyLarge: TextStyle(
           fontSize: 16,
-          color: textPrimaryColor,
+          color: textPrimary,
         ),
         bodyMedium: TextStyle(
           fontSize: 14,
-          color: textSecondaryColor,
+          color: textSecondary,
         ),
       ),
     );
