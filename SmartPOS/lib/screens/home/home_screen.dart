@@ -16,8 +16,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  
+  // Bottom navigation feature names
+  static const List<String> _navFeatures = ['Home', 'Sales', '', 'Items', 'Settings'];
 
-  Future<void> _handleLogout(BuildContext context) async {
+  Future<void> _handleLogout() async {
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -38,11 +41,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-    if (confirmed == true && context.mounted) {
+    if (confirmed == true && mounted) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.signOut();
 
-      if (context.mounted) {
+      if (mounted) {
         Fluttertoast.showToast(
           msg: AppConstants.logoutSuccess,
           toastLength: Toast.LENGTH_SHORT,
@@ -174,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // Logout button
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () => _handleLogout(context),
+            onPressed: _handleLogout,
           ),
         ],
       ),
@@ -257,6 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color bgColor, {bool isGradient = false}) {
+    // TODO: Replace with dynamic data from backend/state management
     return Container(
       width: 180,
       margin: const EdgeInsets.only(right: 12),
@@ -524,6 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 12),
           
           // Activity items
+          // TODO: Replace with dynamic data from backend/state management
           _buildActivityItem('Order #1234', '\$125.50', '2 hours ago', Icons.shopping_bag),
           _buildActivityItem('Order #1233', '\$89.99', '4 hours ago', Icons.shopping_bag),
           _buildActivityItem('Stock updated', 'Laptop - qty: 5', '6 hours ago', Icons.inventory),
@@ -601,12 +606,12 @@ class _HomeScreenState extends State<HomeScreen> {
         unselectedItemColor: AppTheme.textSecondary,
         currentIndex: _currentIndex,
         onTap: (index) {
-          if (index != 2) {
+          if (index != 2) { // Skip QR scanner (FAB)
             setState(() {
               _currentIndex = index;
             });
-            if (index != 0) {
-              _showComingSoon(['Home', 'Sales', '', 'Items', 'Settings'][index]);
+            if (index != 0 && _navFeatures[index].isNotEmpty) {
+              _showComingSoon(_navFeatures[index]);
             }
           }
         },
