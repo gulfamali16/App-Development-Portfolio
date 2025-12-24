@@ -2,21 +2,26 @@ import 'package:flutter/material.dart';
 
 /// App theme configuration with POS-themed colors (blues and greens for business/money)
 class AppTheme {
-  // Primary Colors (Velocity POS theme)
-  static const Color primaryGreen = Color(0xFF2BEE79);
-  static const Color primaryBlue = Color(0xFF137FEC);
+  // Primary Colors - New Velocity POS Theme from requirements
+  static const Color primaryGreen = Color(0xFF00E676); // Neon Green
+  static const Color primaryBlue = Color(0xFF2979FF); // Electric Blue
   
-  // Background Colors (Dark theme)
-  static const Color backgroundDark = Color(0xFF102217);
-  static const Color surfaceDark = Color(0xFF1A2E22);
+  // Background Colors (Dark theme) - Updated per requirements
+  static const Color backgroundDark = Color(0xFF121212); // Matte Black
+  static const Color surfaceDark = Color(0xFF1E1E1E); // Dark Grey
+  static const Color surfaceLight = Color(0xFF2C2C2C); // Lighter surface
   static const Color surfaceHighlight = Color(0xFF233648);
-  static const Color surfaceDark2 = Color(0xFF193324);
+  static const Color surfaceDark2 = Color(0xFF1E1E1E);
+  
+  // Alert Colors
+  static const Color alertRed = Color(0xFFFF5252); // Soft Red
+  static const Color warningOrange = Color(0xFFFF9800);
   
   // Border Colors
   static const Color borderDark = Color(0xFF326747);
   
   // Text Colors
-  static const Color textSecondary = Color(0xFF92C9A8);
+  static const Color textSecondary = Color(0xFF9E9E9E); // Light Grey
   static const Color textPrimary = Colors.white;
   
   // Legacy colors (kept for compatibility)

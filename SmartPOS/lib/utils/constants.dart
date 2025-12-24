@@ -27,6 +27,8 @@ class AppConstants {
   static const String productsCollection = 'products';
   static const String ordersCollection = 'orders';
   static const String inventoryCollection = 'inventory';
+  static const String categoriesCollection = 'categories';
+  static const String stockMovementsCollection = 'stock_movements';
   
   // SharedPreferences keys
   static const String rememberMeKey = 'remember_me';
@@ -35,7 +37,7 @@ class AppConstants {
   
   // Database
   static const String databaseName = 'smartpos.db';
-  static const int databaseVersion = 1;
+  static const int databaseVersion = 2; // Incremented for new tables
   
   // UI
   static const double defaultPadding = 16.0;
