@@ -4,6 +4,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import '../../config/routes.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/inventory_provider.dart';
+import '../../providers/product_provider.dart';
 import '../../utils/constants.dart';
 
 /// Home screen dashboard for authenticated users
@@ -17,11 +19,23 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   
-  // Bottom navigation feature names
-  static const List<String> _navFeatures = ['Home', 'Sales', '', 'Items', 'Settings'];
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
+    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    
+    await Future.wait([
+      inventoryProvider.loadDashboardStats(),
+      productProvider.loadProducts(),
+    ]);
+  }
 
   Future<void> _handleLogout() async {
-    // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -63,38 +77,36 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
       body: SafeArea(
-        child: Consumer<AuthProvider>(
-          builder: (context, authProvider, child) {
+        child: Consumer3<AuthProvider, InventoryProvider, ProductProvider>(
+          builder: (context, authProvider, inventoryProvider, productProvider, child) {
             final user = authProvider.user;
+            final stats = inventoryProvider.dashboardStats;
+            final lowStockProducts = productProvider.lowStockProducts;
 
-            return SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  _buildHeader(context, user?.name ?? 'User'),
-                  
-                  // Overview section
-                  _buildOverviewSection(),
-                  
-                  // Quick Actions
-                  _buildQuickActions(),
-                  
-                  // Low Stock Alert
-                  _buildLowStockAlert(),
-                  
-                  // Recent Activity
-                  _buildRecentActivity(),
-                  
-                  const SizedBox(height: 80), // Space for bottom nav
-                ],
+            return RefreshIndicator(
+              onRefresh: _loadData,
+              color: AppTheme.primaryGreen,
+              backgroundColor: AppTheme.surfaceDark,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(context, user?.name ?? 'User'),
+                    _buildOverviewSection(stats),
+                    _buildQuickActions(),
+                    if (lowStockProducts.isNotEmpty) _buildLowStockAlert(lowStockProducts.length),
+                    _buildRecentActivity(),
+                    const SizedBox(height: 80),
+                  ],
+                ),
               ),
             );
           },
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
-      floatingActionButton: _buildFloatingQRButton(),
+      floatingActionButton: _buildFloatingPOSButton(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
@@ -104,33 +116,12 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          // Store logo
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.surfaceDark,
-              border: Border.all(
-                color: AppTheme.primaryGreen.withOpacity(0.3),
-                width: 2,
-              ),
-            ),
-            child: const Icon(
-              Icons.bolt,
-              size: 24,
-              color: AppTheme.primaryGreen,
-            ),
-          ),
-          const SizedBox(width: 12),
-          
-          // Greeting
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Welcome back,',
+                  'Hello,',
                   style: TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 14,
@@ -140,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   userName,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                   maxLines: 1,
@@ -149,15 +140,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          
-          // Notification bell with badge
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: Colors.white),
+            onPressed: () => _showComingSoon('Settings'),
+          ),
           Stack(
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                onPressed: () {
-                  _showComingSoon('Notifications');
-                },
+                onPressed: () => _showComingSoon('Notifications'),
               ),
               Positioned(
                 right: 8,
@@ -166,67 +157,37 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 8,
                   height: 8,
                   decoration: const BoxDecoration(
-                    color: Colors.red,
+                    color: AppTheme.alertRed,
                     shape: BoxShape.circle,
                   ),
                 ),
               ),
             ],
           ),
-          
-          // Logout button
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: _handleLogout,
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildOverviewSection() {
+  Widget _buildOverviewSection(Map<String, dynamic> stats) {
+    final todaysSales = stats['todaysSales'] ?? 0.0;
+    final totalProducts = stats['totalProducts'] ?? 0;
+    final lowStockCount = stats['lowStockCount'] ?? 0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Overview',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceDark,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.borderDark),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Today',
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.keyboard_arrow_down, color: AppTheme.textSecondary, size: 18),
-                  ],
-                ),
-              ),
-            ],
+          const Text(
+            'Overview',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
-          
-          // Stat cards (horizontal scroll)
           SizedBox(
             height: 140,
             child: ListView(
@@ -234,22 +195,22 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildStatCard(
                   'Today\'s Sales',
-                  '\$2,458.50',
+                  '\$${todaysSales.toStringAsFixed(2)}',
                   Icons.payments,
                   AppTheme.primaryBlue,
                   isGradient: true,
                 ),
                 _buildStatCard(
-                  'Receivables',
-                  '\$1,245.00',
-                  Icons.pending_actions,
-                  AppTheme.surfaceDark2,
+                  'Total Products',
+                  totalProducts.toString(),
+                  Icons.inventory_2,
+                  AppTheme.surfaceDark,
                 ),
                 _buildStatCard(
-                  'Transactions',
-                  '127',
-                  Icons.receipt_long,
-                  AppTheme.surfaceDark2,
+                  'Low Stock',
+                  lowStockCount.toString(),
+                  Icons.warning_amber,
+                  AppTheme.surfaceDark,
                 ),
               ],
             ),
@@ -260,7 +221,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color bgColor, {bool isGradient = false}) {
-    // TODO: Replace with dynamic data from backend/state management
     return Container(
       width: 180,
       margin: const EdgeInsets.only(right: 12),
@@ -330,21 +290,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          
-          // Grid layout
           Column(
             children: [
-              // New Sale - Large button (full width)
               _buildActionButton(
                 'New Sale',
                 Icons.point_of_sale,
                 AppTheme.primaryGreen,
                 isLarge: true,
-                onTap: () => _showComingSoon('New Sale'),
+                onTap: () => _showComingSoon('POS'),
               ),
               const SizedBox(height: 12),
-              
-              // Two column grid
               Row(
                 children: [
                   Expanded(
@@ -352,16 +307,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Add Product',
                       Icons.add_shopping_cart,
                       AppTheme.surfaceDark,
-                      onTap: () => _showComingSoon('Add Product'),
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.addProduct),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildActionButton(
-                      'Manage Stock',
-                      Icons.inventory,
+                      'Stock In',
+                      Icons.add_box,
                       AppTheme.surfaceDark,
-                      onTap: () => _showComingSoon('Manage Stock'),
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.stockIn),
                     ),
                   ),
                 ],
@@ -371,19 +326,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Expanded(
                     child: _buildActionButton(
-                      'CRM',
-                      Icons.people,
+                      'Add Customer',
+                      Icons.person_add,
                       AppTheme.surfaceDark,
-                      onTap: () => _showComingSoon('CRM'),
+                      onTap: () => _showComingSoon('Add Customer'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildActionButton(
-                      'Reports',
-                      Icons.analytics,
+                      'Payment',
+                      Icons.payment,
                       AppTheme.surfaceDark,
-                      onTap: () => _showComingSoon('Reports'),
+                      onTap: () => _showComingSoon('Payment'),
                     ),
                   ),
                 ],
@@ -405,7 +360,12 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
+          border: Border.all(
+            color: bgColor == AppTheme.primaryGreen 
+                ? AppTheme.primaryGreen 
+                : AppTheme.borderDark.withOpacity(0.5),
+            width: bgColor == AppTheme.primaryGreen ? 2 : 1,
+          ),
         ),
         child: isLarge
             ? Row(
@@ -448,50 +408,53 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildLowStockAlert() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
+  Widget _buildLowStockAlert(int count) {
+    return InkWell(
+      onTap: () => Navigator.pushNamed(context, AppRoutes.products),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.alertRed.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.alertRed.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.alertRed.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.warning_amber, color: AppTheme.alertRed, size: 24),
             ),
-            child: const Icon(Icons.warning_amber, color: Colors.red, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Low Stock Alert',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Low Stock Alert',
+                    style: TextStyle(
+                      color: AppTheme.alertRed,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                Text(
-                  '5 items are running low on stock',
-                  style: TextStyle(
-                    color: Colors.red.withOpacity(0.8),
-                    fontSize: 12,
+                  Text(
+                    '$count products below minimum stock level',
+                    style: TextStyle(
+                      color: AppTheme.alertRed.withOpacity(0.8),
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.arrow_forward_ios, color: Colors.red, size: 16),
-        ],
+            const Icon(Icons.arrow_forward_ios, color: AppTheme.alertRed, size: 16),
+          ],
+        ),
       ),
     );
   }
@@ -506,7 +469,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Recent Activity',
+                'Recent Sales',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -526,65 +489,21 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          
-          // Activity items
-          // TODO: Replace with dynamic data from backend/state management
-          _buildActivityItem('Order #1234', '\$125.50', '2 hours ago', Icons.shopping_bag),
-          _buildActivityItem('Order #1233', '\$89.99', '4 hours ago', Icons.shopping_bag),
-          _buildActivityItem('Stock updated', 'Laptop - qty: 5', '6 hours ago', Icons.inventory),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityItem(String title, String subtitle, String time, IconData icon) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
-      ),
-      child: Row(
-        children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.backgroundDark,
-              borderRadius: BorderRadius.circular(8),
+              color: AppTheme.surfaceDark,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
             ),
-            child: Icon(icon, color: AppTheme.primaryGreen, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+            child: Center(
+              child: Text(
+                'No recent sales',
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 14,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            time,
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 12,
+              ),
             ),
           ),
         ],
@@ -606,12 +525,18 @@ class _HomeScreenState extends State<HomeScreen> {
         unselectedItemColor: AppTheme.textSecondary,
         currentIndex: _currentIndex,
         onTap: (index) {
-          if (index != 2) { // Skip QR scanner (FAB)
+          if (index != 2) {
             setState(() {
               _currentIndex = index;
             });
-            if (index != 0 && _navFeatures[index].isNotEmpty) {
-              _showComingSoon(_navFeatures[index]);
+            if (index == 0) {
+              // Already on home
+            } else if (index == 1) {
+              Navigator.pushNamed(context, AppRoutes.products);
+            } else if (index == 3) {
+              _showComingSoon('Customers');
+            } else if (index == 4) {
+              _showComingSoon('Reports');
             }
           }
         },
@@ -624,34 +549,35 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_outlined),
-            activeIcon: Icon(Icons.receipt_long),
-            label: 'Sales',
+            icon: Icon(Icons.inventory_2_outlined),
+            activeIcon: Icon(Icons.inventory_2),
+            label: 'Products',
           ),
           BottomNavigationBarItem(
-            icon: SizedBox(width: 48), // Space for FAB
+            icon: SizedBox(width: 48),
             label: '',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.inventory_2_outlined),
-            activeIcon: Icon(Icons.inventory_2),
-            label: 'Items',
+            icon: Icon(Icons.people_outline),
+            activeIcon: Icon(Icons.people),
+            label: 'Customers',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Settings',
+            icon: Icon(Icons.analytics_outlined),
+            activeIcon: Icon(Icons.analytics),
+            label: 'Reports',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFloatingQRButton() {
+  Widget _buildFloatingPOSButton() {
     return FloatingActionButton(
-      onPressed: () => _showComingSoon('QR Scanner'),
+      onPressed: () => _showComingSoon('POS'),
       backgroundColor: AppTheme.primaryGreen,
-      child: const Icon(Icons.qr_code_scanner, color: AppTheme.backgroundDark),
+      elevation: 4,
+      child: const Icon(Icons.point_of_sale, color: AppTheme.backgroundDark, size: 28),
     );
   }
 
