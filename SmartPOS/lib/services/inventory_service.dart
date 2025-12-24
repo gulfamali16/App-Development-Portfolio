@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 import '../models/stock_movement_model.dart';
 import '../models/product_model.dart';
 import 'database_service.dart';
@@ -68,7 +69,7 @@ class InventoryService {
 
       // Create stock movement record
       final movement = StockMovementModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: const Uuid().v4(),
         productId: productId,
         type: 'in',
         quantity: quantity,
@@ -133,7 +134,7 @@ class InventoryService {
 
       // Create stock movement record
       final movement = StockMovementModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: const Uuid().v4(),
         productId: productId,
         type: 'out',
         quantity: quantity,

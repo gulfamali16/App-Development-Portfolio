@@ -56,7 +56,7 @@ class _StockOutScreenState extends State<StockOutScreen> {
       return;
     }
 
-    final quantity = int.parse(_quantityController.text);
+    final quantity = int.tryParse(_quantityController.text) ?? 1;
     if (quantity > _selectedProduct!.quantity) {
       Fluttertoast.showToast(
         msg: 'Quantity exceeds available stock',
@@ -357,13 +357,13 @@ class _StockOutScreenState extends State<StockOutScreen> {
                 Column(
                   children: [
                     Text(
-                      'Stock: ${_selectedProduct!.quantity} → ${_selectedProduct!.quantity - int.parse(_quantityController.text)}',
+                      'Stock: ${_selectedProduct!.quantity} → ${_selectedProduct!.quantity - (int.tryParse(_quantityController.text) ?? 0)}',
                       style: TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 14,
                       ),
                     ),
-                    if (int.parse(_quantityController.text) > _selectedProduct!.quantity)
+                    if ((int.tryParse(_quantityController.text) ?? 0) > _selectedProduct!.quantity)
                       const Text(
                         '⚠️ Quantity exceeds available stock',
                         style: TextStyle(

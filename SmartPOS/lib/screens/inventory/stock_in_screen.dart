@@ -340,7 +340,7 @@ class _StockInScreenState extends State<StockInScreen> {
               ),
               if (_selectedProduct != null)
                 Text(
-                  'Stock: ${_selectedProduct!.quantity} → ${_selectedProduct!.quantity + int.parse(_quantityController.text)}',
+                  'Stock: ${_selectedProduct!.quantity} → ${_selectedProduct!.quantity + (int.tryParse(_quantityController.text) ?? 0)}',
                   style: TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 14,
