@@ -40,19 +40,57 @@ class DatabaseService {
       )
     ''');
 
-    // Products table
+    // Categories table
+    await db.execute('''
+      CREATE TABLE categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        imageUrl TEXT,
+        createdAt TEXT,
+        updatedAt TEXT,
+        syncStatus INTEGER DEFAULT 0
+      )
+    ''');
+
+    // Products table (updated with new fields)
     await db.execute('''
       CREATE TABLE products (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
-        price REAL NOT NULL,
-        quantity INTEGER NOT NULL,
-        category TEXT,
+        sku TEXT,
         barcode TEXT,
+        price REAL NOT NULL,
+        costPrice REAL,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        minStock INTEGER DEFAULT 10,
+        unitType TEXT DEFAULT 'item',
+        categoryId TEXT,
         imageUrl TEXT,
         createdAt TEXT,
-        updatedAt TEXT
+        updatedAt TEXT,
+        syncStatus INTEGER DEFAULT 0,
+        FOREIGN KEY (categoryId) REFERENCES categories(id)
+      )
+    ''');
+
+    // Stock movements table
+    await db.execute('''
+      CREATE TABLE stock_movements (
+        id TEXT PRIMARY KEY,
+        productId TEXT NOT NULL,
+        type TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        reason TEXT,
+        supplier TEXT,
+        reference TEXT,
+        notes TEXT,
+        previousStock INTEGER,
+        newStock INTEGER,
+        createdAt TEXT,
+        syncStatus INTEGER DEFAULT 0,
+        FOREIGN KEY (productId) REFERENCES products(id)
       )
     ''');
 
@@ -85,7 +123,47 @@ class DatabaseService {
   /// Upgrade database
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // Handle database upgrades here
-    // This will be called when the database version is incremented
+    if (oldVersion < 2) {
+      // Add categories table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS categories (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          description TEXT,
+          imageUrl TEXT,
+          createdAt TEXT,
+          updatedAt TEXT,
+          syncStatus INTEGER DEFAULT 0
+        )
+      ''');
+
+      // Add new columns to products table
+      await db.execute('ALTER TABLE products ADD COLUMN sku TEXT');
+      await db.execute('ALTER TABLE products ADD COLUMN costPrice REAL');
+      await db.execute('ALTER TABLE products ADD COLUMN minStock INTEGER DEFAULT 10');
+      await db.execute('ALTER TABLE products ADD COLUMN unitType TEXT DEFAULT "item"');
+      await db.execute('ALTER TABLE products ADD COLUMN categoryId TEXT');
+      await db.execute('ALTER TABLE products ADD COLUMN syncStatus INTEGER DEFAULT 0');
+
+      // Add stock movements table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS stock_movements (
+          id TEXT PRIMARY KEY,
+          productId TEXT NOT NULL,
+          type TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          reason TEXT,
+          supplier TEXT,
+          reference TEXT,
+          notes TEXT,
+          previousStock INTEGER,
+          newStock INTEGER,
+          createdAt TEXT,
+          syncStatus INTEGER DEFAULT 0,
+          FOREIGN KEY (productId) REFERENCES products(id)
+        )
+      ''');
+    }
   }
 
   /// Close database
@@ -101,6 +179,8 @@ class DatabaseService {
     final db = await database;
     await db.delete('users');
     await db.delete('products');
+    await db.delete('categories');
+    await db.delete('stock_movements');
     await db.delete('orders');
     await db.delete('sync_queue');
   }
