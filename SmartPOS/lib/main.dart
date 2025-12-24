@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import 'config/theme.dart';
 import 'config/routes.dart';
 import 'providers/auth_provider.dart';
+import 'providers/product_provider.dart';
+import 'providers/category_provider.dart';
+import 'providers/inventory_provider.dart';
 import 'utils/constants.dart';
 
 /// Main entry point of the Smart POS application
@@ -32,6 +35,9 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
+        ChangeNotifierProvider(create: (_) => InventoryProvider()),
       ],
       child: MaterialApp(
         title: AppConstants.appName,
