@@ -4,6 +4,10 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/inventory/products_screen.dart';
+import '../screens/inventory/add_product_screen.dart';
+import '../screens/inventory/stock_in_screen.dart';
+import '../screens/inventory/stock_out_screen.dart';
 
 /// App routes configuration
 class AppRoutes {
@@ -36,13 +40,17 @@ class AppRoutes {
       case home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
       case products:
-      case productDetail:
+        return MaterialPageRoute(builder: (_) => const ProductsScreen());
       case addProduct:
+        return MaterialPageRoute(builder: (_) => const AddProductScreen());
+      case stockIn:
+        return MaterialPageRoute(builder: (_) => const StockInScreen());
+      case stockOut:
+        return MaterialPageRoute(builder: (_) => const StockOutScreen());
+      case productDetail:
       case editProduct:
       case categories:
       case addCategory:
-      case stockIn:
-      case stockOut:
         // Placeholder for screens not yet implemented
         return MaterialPageRoute(
           builder: (_) => Scaffold(
