@@ -193,7 +193,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.trending_up, color: Colors.white, size: 16),
+                    const Icon(Icons.trending_up, color: Colors.white, size: 16),
                     const SizedBox(width: 4),
                     Text(
                       '+12%',
@@ -540,8 +540,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return InkWell(
       onTap: () => Navigator.pushNamed(context, AppRoutes.productDetail, arguments: product),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(

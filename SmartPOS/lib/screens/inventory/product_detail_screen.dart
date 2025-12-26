@@ -284,7 +284,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                 child: _buildStatCard(
                   'Stock Level',
                   '${widget.product.quantity} / ${widget.product.minStock}',
-                  widget.product.quantity / (widget.product.minStock > 0 ? widget.product.minStock : 1),
+                  widget.product.minStock > 0 
+                      ? widget.product.quantity / widget.product.minStock 
+                      : null,
                 ),
               ),
               const SizedBox(width: 12),

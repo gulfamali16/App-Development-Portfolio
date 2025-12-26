@@ -213,8 +213,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           color: AppTheme.surfaceDark,
           itemBuilder: (context) => [
             PopupMenuItem(
-              child: Row(
-                children: const [
+              child: const Row(
+                children: [
                   Icon(Icons.edit, color: Colors.white, size: 20),
                   SizedBox(width: 12),
                   Text('Edit', style: TextStyle(color: Colors.white)),
@@ -228,8 +228,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               },
             ),
             PopupMenuItem(
-              child: Row(
-                children: const [
+              child: const Row(
+                children: [
                   Icon(Icons.delete, color: AppTheme.alertRed, size: 20),
                   SizedBox(width: 12),
                   Text('Delete', style: TextStyle(color: AppTheme.alertRed)),
