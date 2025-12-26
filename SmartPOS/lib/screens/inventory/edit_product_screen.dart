@@ -248,6 +248,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            _buildImageUploadSection(),
+            const SizedBox(height: 24),
             TextFormField(
               controller: _nameController,
               style: const TextStyle(color: Colors.white),
@@ -587,6 +589,66 @@ class _EditProductScreenState extends State<EditProductScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildImageUploadSection() {
+    return InkWell(
+      onTap: () {
+        // TODO: Implement image picker
+        Fluttertoast.showToast(
+          msg: 'Image upload coming soon',
+          backgroundColor: Colors.blue,
+          textColor: Colors.white,
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        height: 180,
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceDark,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppTheme.borderDark.withOpacity(0.5),
+            width: 2,
+            style: BorderStyle.solid,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.add_photo_alternate,
+                size: 48,
+                color: AppTheme.primaryGreen,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Tap to update product image',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'PNG or JPG (Max 5MB)',
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
