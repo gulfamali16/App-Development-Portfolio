@@ -6,8 +6,13 @@ import '../screens/auth/forgot_password_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/inventory/products_screen.dart';
 import '../screens/inventory/add_product_screen.dart';
+import '../screens/inventory/edit_product_screen.dart';
+import '../screens/inventory/product_detail_screen.dart';
 import '../screens/inventory/stock_in_screen.dart';
 import '../screens/inventory/stock_out_screen.dart';
+import '../screens/inventory/add_category_screen.dart';
+import '../screens/inventory/categories_screen.dart';
+import '../models/product_model.dart';
 
 /// App routes configuration
 class AppRoutes {
@@ -43,31 +48,38 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const ProductsScreen());
       case addProduct:
         return MaterialPageRoute(builder: (_) => const AddProductScreen());
+      case editProduct:
+        final product = settings.arguments as ProductModel?;
+        if (product == null) {
+          return _errorRoute('Product data is required');
+        }
+        return MaterialPageRoute(builder: (_) => EditProductScreen(product: product));
+      case productDetail:
+        final product = settings.arguments as ProductModel?;
+        if (product == null) {
+          return _errorRoute('Product data is required');
+        }
+        return MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product));
       case stockIn:
         return MaterialPageRoute(builder: (_) => const StockInScreen());
       case stockOut:
         return MaterialPageRoute(builder: (_) => const StockOutScreen());
-      case productDetail:
-      case editProduct:
-      case categories:
       case addCategory:
-        // Placeholder for screens not yet implemented
-        return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            appBar: AppBar(title: Text(settings.name ?? 'Screen')),
-            body: Center(
-              child: Text('${settings.name} - Coming Soon'),
-            ),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const AddCategoryScreen());
+      case categories:
+        return MaterialPageRoute(builder: (_) => const CategoriesScreen());
       default:
-        return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            body: Center(
-              child: Text('No route defined for ${settings.name}'),
-            ),
-          ),
-        );
+        return _errorRoute('No route defined for ${settings.name}');
     }
+  }
+
+  static Route<dynamic> _errorRoute(String message) {
+    return MaterialPageRoute(
+      builder: (_) => Scaffold(
+        body: Center(
+          child: Text(message),
+        ),
+      ),
+    );
   }
 }

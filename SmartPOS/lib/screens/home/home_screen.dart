@@ -106,8 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
-      floatingActionButton: _buildFloatingPOSButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -525,19 +523,19 @@ class _HomeScreenState extends State<HomeScreen> {
         unselectedItemColor: AppTheme.textSecondary,
         currentIndex: _currentIndex,
         onTap: (index) {
-          if (index != 2) {
-            setState(() {
-              _currentIndex = index;
-            });
-            if (index == 0) {
-              // Already on home
-            } else if (index == 1) {
-              Navigator.pushNamed(context, AppRoutes.products);
-            } else if (index == 3) {
-              _showComingSoon('Customers');
-            } else if (index == 4) {
-              _showComingSoon('Reports');
-            }
+          setState(() {
+            _currentIndex = index;
+          });
+          if (index == 0) {
+            // Already on home
+          } else if (index == 1) {
+            Navigator.pushNamed(context, AppRoutes.products);
+          } else if (index == 2) {
+            _showComingSoon('POS');
+          } else if (index == 3) {
+            _showComingSoon('Customers');
+          } else if (index == 4) {
+            _showComingSoon('Reports');
           }
         },
         type: BottomNavigationBarType.fixed,
@@ -554,8 +552,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Products',
           ),
           BottomNavigationBarItem(
-            icon: SizedBox(width: 48),
-            label: '',
+            icon: Icon(Icons.point_of_sale_outlined),
+            activeIcon: Icon(Icons.point_of_sale),
+            label: 'POS',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.people_outline),
@@ -569,15 +568,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildFloatingPOSButton() {
-    return FloatingActionButton(
-      onPressed: () => _showComingSoon('POS'),
-      backgroundColor: AppTheme.primaryGreen,
-      elevation: 4,
-      child: const Icon(Icons.point_of_sale, color: AppTheme.backgroundDark, size: 28),
     );
   }
 

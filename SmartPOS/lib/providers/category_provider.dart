@@ -94,6 +94,11 @@ class CategoryProvider with ChangeNotifier {
     }
   }
 
+  /// Add new category (alias for createCategory)
+  Future<bool> addCategory(CategoryModel category) async {
+    return await createCategory(category);
+  }
+
   /// Update category
   Future<bool> updateCategory(CategoryModel category) async {
     try {
