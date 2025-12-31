@@ -138,6 +138,40 @@ class ProductService {
     }
   }
 
+  /// Update product quantity (for stock changes and sales)
+  Future<bool> updateProductQuantity(String productId, int quantityChange) async {
+    try {
+      final db = await _dbService.database;
+      
+      // Get current product
+      final product = await getProductById(productId);
+      if (product == null) {
+        print('Product not found: $productId');
+        return false;
+      }
+      
+      // Calculate new quantity
+      final newQuantity = product.quantity + quantityChange;
+      
+      // Prevent negative quantities
+      if (newQuantity < 0) {
+        print('Cannot reduce quantity below 0');
+        return false;
+      }
+      
+      // Update quantity in database
+      await db.rawUpdate(
+        'UPDATE products SET quantity = ?, updatedAt = ? WHERE id = ?',
+        [newQuantity, DateTime.now().toIso8601String(), productId],
+      );
+      
+      return true;
+    } catch (e) {
+      print('Error updating product quantity: $e');
+      return false;
+    }
+  }
+
   /// Sync products from Firebase to local database
   Future<void> syncFromFirebase(String userId) async {
     try {
