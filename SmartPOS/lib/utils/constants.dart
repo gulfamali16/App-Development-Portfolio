@@ -37,7 +37,7 @@ class AppConstants {
   
   // Database
   static const String databaseName = 'smartpos.db';
-  static const int databaseVersion = 2; // Incremented for new tables
+  static const int databaseVersion = 3; // Incremented for customers and sales tables
   
   // UI
   static const double defaultPadding = 16.0;

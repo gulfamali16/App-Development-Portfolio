@@ -17,19 +17,10 @@ class ProductDetailScreen extends StatefulWidget {
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
+class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _deleteProduct() async {
@@ -113,17 +104,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
             _buildProductImage(),
             _buildProductInfo(),
             _buildStatsGrid(),
-            _buildTabs(),
-            SizedBox(
-              height: 400,
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildStockHistoryTab(),
-                  _buildSalesAnalyticsTab(),
-                ],
-              ),
-            ),
+            _buildStockHistorySection(),
           ],
         ),
       ),
@@ -370,36 +351,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
     );
   }
 
-  Widget _buildTabs() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceDark,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: TabBar(
-          controller: _tabController,
-          labelColor: AppTheme.primaryGreen,
-          unselectedLabelColor: AppTheme.textSecondary,
-          indicator: BoxDecoration(
-            color: AppTheme.primaryGreen.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          tabs: const [
-            Tab(text: 'Stock History'),
-            Tab(text: 'Sales Analytics'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStockHistoryTab() {
+  Widget _buildStockHistorySection() {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text(
+            'Stock History',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -410,33 +376,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
             child: const Center(
               child: Text(
                 'No stock movements yet',
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSalesAnalyticsTab() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceDark,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
-            ),
-            child: const Center(
-              child: Text(
-                'No sales data yet',
                 style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 14,
