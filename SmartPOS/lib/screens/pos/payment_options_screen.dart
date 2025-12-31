@@ -222,7 +222,7 @@ class PaymentOptionsScreen extends StatelessWidget {
             ),
           ),
           Text(
-            '${customer!.isDebtor ? "-" : "+"}\\$${customer!.balance.abs().toStringAsFixed(2)}',
+            '${customer!.isDebtor ? "-" : "+"}\$${customer!.balance.abs().toStringAsFixed(2)}',
             style: TextStyle(
               color: customer!.isDebtor ? AppTheme.alertRed : AppTheme.primaryBlue,
               fontSize: 18,

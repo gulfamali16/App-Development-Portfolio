@@ -124,7 +124,11 @@ class SalesService {
   Future<double> getTodaysSalesTotal() async {
     try {
       final sales = await getTodaysSales();
-      return sales.fold(0.0, (sum, sale) => sum + sale.total);
+      double total = 0.0;
+      for (var sale in sales) {
+        total += sale.total;
+      }
+      return total;
     } catch (e) {
       throw Exception('Failed to calculate today\'s sales: $e');
     }

@@ -300,7 +300,7 @@ class _SelectCustomerScreenState extends State<SelectCustomerScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${customer.isDebtor ? "-" : "+"}\\$${customer.balance.abs().toStringAsFixed(2)}',
+                    '${customer.isDebtor ? "-" : "+"}\$${customer.balance.abs().toStringAsFixed(2)}',
                     style: TextStyle(
                       color: customer.isDebtor ? AppTheme.alertRed : AppTheme.primaryBlue,
                       fontSize: 12,

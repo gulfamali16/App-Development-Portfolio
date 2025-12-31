@@ -327,7 +327,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                   Text(
                     customer.balance == 0 
                         ? '\$0.00'
-                        : '${customer.isDebtor ? "-" : "+"}\\$${customer.balance.abs().toStringAsFixed(2)}',
+                        : '${customer.isDebtor ?  "-" : "+"}\$${customer.balance. abs().toStringAsFixed(2)}',
                     style: TextStyle(
                       color: balanceColor,
                       fontSize: 16,
