@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/theme.dart';
 import 'home/home_screen.dart';
 import 'inventory/products_screen.dart';
+import 'pos/pos_screen.dart';
 
 /// Main screen with tab-based navigation using IndexedStack
 class MainScreen extends StatefulWidget {
@@ -23,7 +24,7 @@ class _MainScreenState extends State<MainScreen> {
     _screens = [
       const HomeScreenContent(),
       const ProductsScreen(),
-      const POSPlaceholder(),
+      const POSScreen(),
       const CustomersPlaceholder(),
       const ReportsPlaceholder(),
     ];
@@ -88,29 +89,6 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Reports',
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Placeholder for POS screen
-class POSPlaceholder extends StatelessWidget {
-  const POSPlaceholder({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
-      appBar: AppBar(
-        backgroundColor: AppTheme.surfaceDark,
-        title: const Text('POS', style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-      ),
-      body: const Center(
-        child: Text(
-          'POS Screen - Coming Soon',
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
-        ),
       ),
     );
   }
