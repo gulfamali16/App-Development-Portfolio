@@ -8,7 +8,7 @@ import '../../providers/inventory_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../utils/constants.dart';
 
-/// Home screen dashboard for authenticated users
+/// Home screen dashboard for authenticated users (used when navigating directly)
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -17,7 +17,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
   
   @override
   void initState() {
@@ -76,36 +75,66 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
-      body: SafeArea(
-        child: Consumer3<AuthProvider, InventoryProvider, ProductProvider>(
-          builder: (context, authProvider, inventoryProvider, productProvider, child) {
-            final user = authProvider.user;
-            final stats = inventoryProvider.dashboardStats;
-            final lowStockProducts = productProvider.lowStockProducts;
+      body: const HomeScreenContent(),
+    );
+  }
+}
 
-            return RefreshIndicator(
-              onRefresh: _loadData,
-              color: AppTheme.primaryGreen,
-              backgroundColor: AppTheme.surfaceDark,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(context, user?.name ?? 'User'),
-                    _buildOverviewSection(stats),
-                    _buildQuickActions(),
-                    if (lowStockProducts.isNotEmpty) _buildLowStockAlert(lowStockProducts.length),
-                    _buildRecentActivity(),
-                    const SizedBox(height: 80),
-                  ],
-                ),
+/// Home screen content widget (used in MainScreen's IndexedStack)
+class HomeScreenContent extends StatefulWidget {
+  const HomeScreenContent({super.key});
+
+  @override
+  State<HomeScreenContent> createState() => _HomeScreenContentState();
+}
+
+class _HomeScreenContentState extends State<HomeScreenContent> {
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
+    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    
+    await Future.wait([
+      inventoryProvider.loadDashboardStats(),
+      productProvider.loadProducts(),
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Consumer3<AuthProvider, InventoryProvider, ProductProvider>(
+        builder: (context, authProvider, inventoryProvider, productProvider, child) {
+          final user = authProvider.user;
+          final stats = inventoryProvider.dashboardStats;
+          final lowStockProducts = productProvider.lowStockProducts;
+
+          return RefreshIndicator(
+            onRefresh: _loadData,
+            color: AppTheme.primaryGreen,
+            backgroundColor: AppTheme.surfaceDark,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(context, user?.name ?? 'User'),
+                  _buildOverviewSection(stats),
+                  _buildQuickActions(),
+                  if (lowStockProducts.isNotEmpty) _buildLowStockAlert(lowStockProducts.length),
+                  _buildRecentActivity(),
+                  const SizedBox(height: 80),
+                ],
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -503,68 +532,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceDark,
-        border: Border(
-          top: BorderSide(color: AppTheme.borderDark.withOpacity(0.5)),
-        ),
-      ),
-      child: BottomNavigationBar(
-        backgroundColor: AppTheme.surfaceDark,
-        selectedItemColor: AppTheme.primaryGreen,
-        unselectedItemColor: AppTheme.textSecondary,
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-          if (index == 0) {
-            // Already on home
-          } else if (index == 1) {
-            Navigator.pushNamed(context, AppRoutes.products);
-          } else if (index == 2) {
-            _showComingSoon('POS');
-          } else if (index == 3) {
-            _showComingSoon('Customers');
-          } else if (index == 4) {
-            _showComingSoon('Reports');
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        elevation: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.inventory_2_outlined),
-            activeIcon: Icon(Icons.inventory_2),
-            label: 'Products',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.point_of_sale_outlined),
-            activeIcon: Icon(Icons.point_of_sale),
-            label: 'POS',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_outline),
-            activeIcon: Icon(Icons.people),
-            label: 'Customers',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics_outlined),
-            activeIcon: Icon(Icons.analytics),
-            label: 'Reports',
           ),
         ],
       ),

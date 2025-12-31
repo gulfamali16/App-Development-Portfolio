@@ -3,6 +3,7 @@ import '../screens/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
+import '../screens/main_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/inventory/products_screen.dart';
 import '../screens/inventory/add_product_screen.dart';
@@ -43,7 +44,7 @@ class AppRoutes {
       case forgotPassword:
         return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
       case home:
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
+        return MaterialPageRoute(builder: (_) => const MainScreen());
       case products:
         return MaterialPageRoute(builder: (_) => const ProductsScreen());
       case addProduct:

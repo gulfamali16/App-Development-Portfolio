@@ -94,6 +94,48 @@ class DatabaseService {
       )
     ''');
 
+    // Customers table
+    await db.execute('''
+      CREATE TABLE customers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        phone TEXT,
+        email TEXT,
+        address TEXT,
+        city TEXT,
+        pincode TEXT,
+        dateOfBirth TEXT,
+        photoUrl TEXT,
+        balance REAL DEFAULT 0,
+        lastPurchaseAt TEXT,
+        createdAt TEXT,
+        updatedAt TEXT,
+        syncStatus INTEGER DEFAULT 0
+      )
+    ''');
+
+    // Sales table
+    await db.execute('''
+      CREATE TABLE sales (
+        id TEXT PRIMARY KEY,
+        customerId TEXT,
+        customerName TEXT,
+        items TEXT NOT NULL,
+        subtotal REAL NOT NULL,
+        discount REAL DEFAULT 0,
+        discountType TEXT,
+        tax REAL DEFAULT 0,
+        taxRate REAL DEFAULT 8,
+        total REAL NOT NULL,
+        paymentMethod TEXT,
+        paymentStatus TEXT,
+        cashierId TEXT,
+        cashierName TEXT,
+        createdAt TEXT,
+        syncStatus INTEGER DEFAULT 0
+      )
+    ''');
+
     // Orders table
     await db.execute('''
       CREATE TABLE orders (
@@ -138,12 +180,36 @@ class DatabaseService {
       ''');
 
       // Add new columns to products table
-      await db.execute('ALTER TABLE products ADD COLUMN sku TEXT');
-      await db.execute('ALTER TABLE products ADD COLUMN costPrice REAL');
-      await db.execute('ALTER TABLE products ADD COLUMN minStock INTEGER DEFAULT 10');
-      await db.execute('ALTER TABLE products ADD COLUMN unitType TEXT DEFAULT "item"');
-      await db.execute('ALTER TABLE products ADD COLUMN categoryId TEXT');
-      await db.execute('ALTER TABLE products ADD COLUMN syncStatus INTEGER DEFAULT 0');
+      try {
+        await db.execute('ALTER TABLE products ADD COLUMN sku TEXT');
+      } catch (e) {
+        // Column might already exist
+      }
+      try {
+        await db.execute('ALTER TABLE products ADD COLUMN costPrice REAL');
+      } catch (e) {
+        // Column might already exist
+      }
+      try {
+        await db.execute('ALTER TABLE products ADD COLUMN minStock INTEGER DEFAULT 10');
+      } catch (e) {
+        // Column might already exist
+      }
+      try {
+        await db.execute('ALTER TABLE products ADD COLUMN unitType TEXT DEFAULT "item"');
+      } catch (e) {
+        // Column might already exist
+      }
+      try {
+        await db.execute('ALTER TABLE products ADD COLUMN categoryId TEXT');
+      } catch (e) {
+        // Column might already exist
+      }
+      try {
+        await db.execute('ALTER TABLE products ADD COLUMN syncStatus INTEGER DEFAULT 0');
+      } catch (e) {
+        // Column might already exist
+      }
 
       // Add stock movements table
       await db.execute('''
@@ -164,6 +230,49 @@ class DatabaseService {
         )
       ''');
     }
+
+    // Add customers and sales tables if upgrading from version < 3
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS customers (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          phone TEXT,
+          email TEXT,
+          address TEXT,
+          city TEXT,
+          pincode TEXT,
+          dateOfBirth TEXT,
+          photoUrl TEXT,
+          balance REAL DEFAULT 0,
+          lastPurchaseAt TEXT,
+          createdAt TEXT,
+          updatedAt TEXT,
+          syncStatus INTEGER DEFAULT 0
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS sales (
+          id TEXT PRIMARY KEY,
+          customerId TEXT,
+          customerName TEXT,
+          items TEXT NOT NULL,
+          subtotal REAL NOT NULL,
+          discount REAL DEFAULT 0,
+          discountType TEXT,
+          tax REAL DEFAULT 0,
+          taxRate REAL DEFAULT 8,
+          total REAL NOT NULL,
+          paymentMethod TEXT,
+          paymentStatus TEXT,
+          cashierId TEXT,
+          cashierName TEXT,
+          createdAt TEXT,
+          syncStatus INTEGER DEFAULT 0
+        )
+      ''');
+    }
   }
 
   /// Close database
@@ -181,6 +290,8 @@ class DatabaseService {
     await db.delete('products');
     await db.delete('categories');
     await db.delete('stock_movements');
+    await db.delete('customers');
+    await db.delete('sales');
     await db.delete('orders');
     await db.delete('sync_queue');
   }
