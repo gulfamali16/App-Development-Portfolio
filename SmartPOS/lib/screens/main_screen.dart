@@ -4,6 +4,7 @@ import 'home/home_screen.dart';
 import 'inventory/products_screen.dart';
 import 'pos/pos_screen.dart';
 import 'customers/customers_screen.dart';
+import 'reports/reports_screen.dart';
 
 /// Main screen with tab-based navigation using IndexedStack
 class MainScreen extends StatefulWidget {
@@ -27,7 +28,7 @@ class _MainScreenState extends State<MainScreen> {
       const ProductsScreen(),
       const POSScreen(),
       const CustomersScreen(),
-      const ReportsPlaceholder(),
+      const ReportsScreen(),
     ];
   }
 
@@ -90,29 +91,6 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Reports',
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Placeholder for Reports screen
-class ReportsPlaceholder extends StatelessWidget {
-  const ReportsPlaceholder({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundDark,
-      appBar: AppBar(
-        backgroundColor: AppTheme.surfaceDark,
-        title: const Text('Reports', style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-      ),
-      body: const Center(
-        child: Text(
-          'Reports Screen - Coming Soon',
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
-        ),
       ),
     );
   }

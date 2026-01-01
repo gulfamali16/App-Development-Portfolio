@@ -19,7 +19,6 @@ class ProductsScreen extends StatefulWidget {
 class _ProductsScreenState extends State<ProductsScreen> {
   String _selectedFilter = 'all';
   final TextEditingController _searchController = TextEditingController();
-  int _currentIndex = 1; // Products tab is active
 
   @override
   void initState() {
@@ -85,7 +84,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
           },
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -120,13 +118,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.white),
-            onPressed: () => _showComingSoon('Settings'),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.settings),
           ),
           Stack(
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                onPressed: () => _showComingSoon('Notifications'),
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
               ),
               Positioned(
                 right: 8,
@@ -648,78 +646,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceDark,
-        border: Border(
-          top: BorderSide(color: AppTheme.borderDark.withOpacity(0.5)),
-        ),
-      ),
-      child: BottomNavigationBar(
-        backgroundColor: AppTheme.surfaceDark,
-        selectedItemColor: AppTheme.primaryGreen,
-        unselectedItemColor: AppTheme.textSecondary,
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-          if (index == 0) {
-            Navigator.pushReplacementNamed(context, AppRoutes.home);
-          } else if (index == 1) {
-            // Already on products
-          } else if (index == 2) {
-            _showComingSoon('POS');
-          } else if (index == 3) {
-            _showComingSoon('Customers');
-          } else if (index == 4) {
-            _showComingSoon('Reports');
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        elevation: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.inventory_2_outlined),
-            activeIcon: Icon(Icons.inventory_2),
-            label: 'Products',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.point_of_sale_outlined),
-            activeIcon: Icon(Icons.point_of_sale),
-            label: 'POS',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_outline),
-            activeIcon: Icon(Icons.people),
-            label: 'Customers',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics_outlined),
-            activeIcon: Icon(Icons.analytics),
-            label: 'Reports',
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showComingSoon(String feature) {
-    Fluttertoast.showToast(
-      msg: '$feature feature coming soon',
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      backgroundColor: Colors.blue,
-      textColor: Colors.white,
     );
   }
 }

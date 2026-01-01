@@ -13,6 +13,8 @@ import '../screens/inventory/stock_in_screen.dart';
 import '../screens/inventory/stock_out_screen.dart';
 import '../screens/inventory/add_category_screen.dart';
 import '../screens/inventory/categories_screen.dart';
+import '../screens/settings/settings_screen.dart';
+import '../screens/notifications/notifications_screen.dart';
 import '../models/product_model.dart';
 
 /// App routes configuration
@@ -31,6 +33,8 @@ class AppRoutes {
   static const String addCategory = '/add-category';
   static const String stockIn = '/stock-in';
   static const String stockOut = '/stock-out';
+  static const String settings = '/settings';
+  static const String notifications = '/notifications';
 
   // Route generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -69,6 +73,10 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const AddCategoryScreen());
       case categories:
         return MaterialPageRoute(builder: (_) => const CategoriesScreen());
+      case settings:
+        return MaterialPageRoute(builder: (_) => const SettingsScreen());
+      case notifications:
+        return MaterialPageRoute(builder: (_) => const NotificationsScreen());
       default:
         return _errorRoute('No route defined for ${settings.name}');
     }
