@@ -120,13 +120,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.white),
-            onPressed: () => _showComingSoon('Settings'),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.settings),
           ),
           Stack(
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                onPressed: () => _showComingSoon('Notifications'),
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
               ),
               Positioned(
                 right: 8,

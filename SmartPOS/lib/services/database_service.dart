@@ -160,6 +160,27 @@ class DatabaseService {
         synced INTEGER DEFAULT 0
       )
     ''');
+
+    // Notifications table
+    await db.execute('''
+      CREATE TABLE notifications (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        data TEXT,
+        isRead INTEGER DEFAULT 0,
+        createdAt TEXT
+      )
+    ''');
+
+    // Settings table
+    await db.execute('''
+      CREATE TABLE settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )
+    ''');
   }
 
   /// Upgrade database
@@ -273,6 +294,28 @@ class DatabaseService {
         )
       ''');
     }
+
+    // Add notifications and settings tables if upgrading from version < 4
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+          id TEXT PRIMARY KEY,
+          type TEXT NOT NULL,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          data TEXT,
+          isRead INTEGER DEFAULT 0,
+          createdAt TEXT
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT
+        )
+      ''');
+    }
   }
 
   /// Close database
@@ -294,6 +337,8 @@ class DatabaseService {
     await db.delete('sales');
     await db.delete('orders');
     await db.delete('sync_queue');
+    await db.delete('notifications');
+    await db.delete('settings');
   }
 
   /// Insert or update user

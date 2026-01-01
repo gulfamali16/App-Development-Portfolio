@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../config/theme.dart';
 import '../../providers/customer_provider.dart';
 import '../../models/customer_model.dart';
@@ -24,6 +26,8 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   final _pincodeController = TextEditingController();
   DateTime? _dateOfBirth;
   bool _isSaving = false;
+  String _countryCode = '+1';
+  File? _selectedImage;
 
   @override
   void dispose() {
@@ -45,7 +49,9 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
       final customer = CustomerModel(
         id: const Uuid().v4(),
         name: _nameController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        phone: _phoneController.text.trim().isEmpty 
+            ? null 
+            : '$_countryCode ${_phoneController.text.trim()}',
         email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
         address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
         city: _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
@@ -78,6 +84,48 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surfaceDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppTheme.primaryGreen),
+              title: const Text('Take Photo', style: TextStyle(color: Colors.white)),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await picker.pickImage(source: ImageSource.camera);
+                if (image != null) {
+                  setState(() => _selectedImage = File(image.path));
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppTheme.primaryGreen),
+              title: const Text('Choose from Gallery', style: TextStyle(color: Colors.white)),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                if (image != null) {
+                  setState(() => _selectedImage = File(image.path));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,22 +143,23 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Photo upload placeholder
+            // Photo upload
             Center(
               child: GestureDetector(
-                onTap: () {
-                  Fluttertoast.showToast(msg: 'Photo upload coming soon');
-                },
+                onTap: _pickImage,
                 child: Stack(
                   children: [
                     CircleAvatar(
                       radius: 50,
                       backgroundColor: AppTheme.surfaceDark,
-                      child: Icon(
-                        Icons.person,
-                        size: 50,
-                        color: AppTheme.textSecondary.withOpacity(0.5),
-                      ),
+                      backgroundImage: _selectedImage != null ? FileImage(_selectedImage!) : null,
+                      child: _selectedImage == null
+                          ? Icon(
+                              Icons.person,
+                              size: 50,
+                              color: AppTheme.textSecondary.withOpacity(0.5),
+                            )
+                          : null,
                     ),
                     Positioned(
                       bottom: 0,
@@ -152,23 +201,58 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Phone Number
-            TextFormField(
-              controller: _phoneController,
-              style: const TextStyle(color: Colors.white),
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Phone Number *',
-                labelStyle: TextStyle(color: AppTheme.textSecondary),
-                prefixIcon: Icon(Icons.phone, color: AppTheme.textSecondary),
-                prefixText: '+1 ',
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter phone number';
-                }
-                return null;
-              },
+            // Phone Number with Country Code
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Country code dropdown
+                Container(
+                  width: 100,
+                  child: DropdownButtonFormField<String>(
+                    value: _countryCode,
+                    dropdownColor: AppTheme.surfaceDark,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Code',
+                      labelStyle: TextStyle(color: AppTheme.textSecondary),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: '+1', child: Text('🇺🇸 +1')),
+                      DropdownMenuItem(value: '+44', child: Text('🇬🇧 +44')),
+                      DropdownMenuItem(value: '+92', child: Text('🇵🇰 +92')),
+                      DropdownMenuItem(value: '+91', child: Text('🇮🇳 +91')),
+                      DropdownMenuItem(value: '+971', child: Text('🇦🇪 +971')),
+                      DropdownMenuItem(value: '+966', child: Text('🇸🇦 +966')),
+                      DropdownMenuItem(value: '+86', child: Text('🇨🇳 +86')),
+                      DropdownMenuItem(value: '+81', child: Text('🇯🇵 +81')),
+                      DropdownMenuItem(value: '+82', child: Text('🇰🇷 +82')),
+                      DropdownMenuItem(value: '+61', child: Text('🇦🇺 +61')),
+                    ],
+                    onChanged: (value) => setState(() => _countryCode = value!),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Phone number field
+                Expanded(
+                  child: TextFormField(
+                    controller: _phoneController,
+                    style: const TextStyle(color: Colors.white),
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone Number *',
+                      labelStyle: TextStyle(color: AppTheme.textSecondary),
+                      prefixIcon: Icon(Icons.phone, color: AppTheme.textSecondary),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter phone number';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 

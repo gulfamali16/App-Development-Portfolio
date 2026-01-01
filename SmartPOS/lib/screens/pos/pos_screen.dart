@@ -69,24 +69,70 @@ class _POSScreenState extends State<POSScreen> {
     return AppBar(
       backgroundColor: AppTheme.surfaceDark,
       automaticallyImplyLeading: false,
-      title: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          return Text(
-            authProvider.user?.name ?? 'User',
-            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-          );
-        },
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: Consumer<AuthProvider>(
+          builder: (context, authProvider, child) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: AppTheme.primaryGreen,
+                  child: Text(
+                    authProvider.user?.name?.substring(0, 1).toUpperCase() ?? 'U',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Cashier',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        authProvider.user?.name ?? 'User',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
+      leadingWidth: 150,
       actions: [
         IconButton(
           icon: const Icon(Icons.settings_outlined, color: Colors.white),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.pushNamed(context, '/settings');
+          },
         ),
         Stack(
           children: [
             IconButton(
               icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.pushNamed(context, '/notifications');
+              },
             ),
             Positioned(
               right: 8,
