@@ -113,11 +113,12 @@ class NotificationService {
 
   /// Create payment due reminder
   Future<void> createPaymentDueReminder(String customerName, double amount) async {
+    final formattedAmount = amount.toStringAsFixed(2);
     final notification = NotificationModel(
       id: const Uuid().v4(),
       type: 'payment_due',
       title: 'Payment Due Reminder',
-      message: 'Customer $customerName has \$${amount.toStringAsFixed(2)} pending payments overdue.',
+      message: 'Customer $customerName has \$$formattedAmount pending payments overdue.',
       createdAt: DateTime.now(),
     );
     await addNotification(notification);
@@ -125,11 +126,13 @@ class NotificationService {
 
   /// Create daily sales report notification
   Future<void> createDailySalesReport(double percentageChange) async {
+    final sign = percentageChange > 0 ? '+' : '';
+    final formattedPercentage = percentageChange.toStringAsFixed(1);
     final notification = NotificationModel(
       id: const Uuid().v4(),
       type: 'daily_sales',
       title: 'Daily Sales Report',
-      message: 'Yesterday\'s sales summary is ready. You reached ${percentageChange > 0 ? '+' : ''}${percentageChange.toStringAsFixed(1)}% of daily goal.',
+      message: 'Yesterday\'s sales summary is ready. You reached $sign$formattedPercentage% of daily goal.',
       createdAt: DateTime.now(),
     );
     await addNotification(notification);

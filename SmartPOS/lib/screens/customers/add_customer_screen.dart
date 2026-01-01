@@ -206,7 +206,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Country code dropdown
-                Container(
+                SizedBox(
                   width: 100,
                   child: DropdownButtonFormField<String>(
                     value: _countryCode,
@@ -229,7 +229,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                       DropdownMenuItem(value: '+82', child: Text('🇰🇷 +82')),
                       DropdownMenuItem(value: '+61', child: Text('🇦🇺 +61')),
                     ],
-                    onChanged: (value) => setState(() => _countryCode = value!),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _countryCode = value);
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(width: 10),
