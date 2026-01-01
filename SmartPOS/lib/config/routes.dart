@@ -73,7 +73,7 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const AddCategoryScreen());
       case categories:
         return MaterialPageRoute(builder: (_) => const CategoriesScreen());
-      case settings:
+      case '/settings':
         return MaterialPageRoute(builder: (_) => const SettingsScreen());
       case notifications:
         return MaterialPageRoute(builder: (_) => const NotificationsScreen());

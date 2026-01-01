@@ -55,13 +55,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final connectivity = Connectivity();
     final result = await connectivity.checkConnectivity();
     setState(() {
-      _connectivityStatus = result;
+      // result is now List<ConnectivityResult>, take the first one
+      _connectivityStatus = result. isNotEmpty ? result.first : ConnectivityResult.none;
     });
 
     // Listen for connectivity changes
-    connectivity.onConnectivityChanged.listen((ConnectivityResult result) {
+    connectivity.onConnectivityChanged.listen((List<ConnectivityResult> result) {
       setState(() {
-        _connectivityStatus = result;
+        _connectivityStatus = result. isNotEmpty ? result.first : ConnectivityResult.none;
       });
     });
   }
