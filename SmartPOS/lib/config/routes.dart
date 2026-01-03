@@ -19,6 +19,8 @@ import '../screens/payments/ledger_adjustment_screen.dart';
 import '../screens/sales/sales_history_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
+import '../screens/pos/pos_screen.dart';
+import '../screens/reports/reports_screen.dart';
 import '../models/product_model.dart';
 
 /// App routes configuration
@@ -43,6 +45,8 @@ class AppRoutes {
   static const String outstandingBalances = '/outstanding-balances';
   static const String ledgerAdjustment = '/ledger-adjustment';
   static const String salesHistory = '/sales-history';
+  static const String pos = '/pos';
+  static const String reports = '/reports';
 
   // Route generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -97,6 +101,10 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => LedgerAdjustmentScreen(customerId: customerId));
       case salesHistory:
         return MaterialPageRoute(builder: (_) => const SalesHistoryScreen());
+      case pos:
+        return MaterialPageRoute(builder: (_) => const POSScreen());
+      case reports:
+        return MaterialPageRoute(builder: (_) => const ReportsScreen());
       default:
         return _errorRoute('No route defined for ${settings.name}');
     }

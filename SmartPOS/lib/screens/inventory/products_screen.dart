@@ -9,6 +9,16 @@ import '../../providers/category_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/product_model.dart';
 
+/// Helper function to format numbers with K, M suffix
+String formatNumber(double value) {
+  if (value >= 1000000) {
+    return '${(value / 1000000).toStringAsFixed(1)}M';
+  } else if (value >= 1000) {
+    return '${(value / 1000).toStringAsFixed(1)}K';
+  }
+  return value.toStringAsFixed(0);
+}
+
 /// Products/Inventory screen
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -93,6 +103,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       padding: const EdgeInsets.all(20),
       child: const Text(
         'Products',
+        textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,

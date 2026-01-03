@@ -398,32 +398,41 @@ class _POSScreenState extends State<POSScreen> {
   Widget _buildCartPanel() {
     return DraggableScrollableSheet(
       controller: _cartController,
-      initialChildSize: 0.18,
-      minChildSize: 0.18,
+      initialChildSize: 0.20,
+      minChildSize: 0.20,
       maxChildSize: 0.85,
       snap: true,
-      snapSizes: const [0.18, 0.5, 0.85],
+      snapSizes: const [0.20, 0.5, 0.85],
       builder: (context, scrollController) {
         return Consumer<CartProvider>(
           builder: (context, cartProvider, child) {
-            return Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Drag handle - THIS IS KEY FOR DRAGGING
-                  GestureDetector(
-                    onVerticalDragUpdate: (_) {}, // Enable drag
-                    child: Container(
+            return GestureDetector(
+              onTap: () {
+                // Toggle cart expansion on tap of header area
+                if (_cartController.size < 0.5) {
+                  _cartController.animateTo(
+                    0.85,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                  );
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E1E),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Drag handle - CRITICAL FOR DRAGGING
+                    Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Center(
@@ -431,129 +440,148 @@ class _POSScreenState extends State<POSScreen> {
                           width: 48,
                           height: 5,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.3),
+                            color: Colors.white.withOpacity(0.4),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  
-                  // Cart header
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.shopping_cart, color: AppTheme.primaryGreen),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Current Order',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryGreen.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${cartProvider.itemCount} Items',
+                    
+                    // Cart header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.shopping_cart, color: AppTheme.primaryGreen),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Cart (${cartProvider.itemCount} items)',
                             style: const TextStyle(
-                              color: AppTheme.primaryGreen,
-                              fontSize: 12,
+                              color: Colors.white,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
-                        const Spacer(),
-                        if (cartProvider.itemCount > 0)
-                          TextButton(
-                            onPressed: () {
-                              cartProvider.clearCart();
-                            },
-                            child: const Text(
-                              'Clear all',
-                              style: TextStyle(color: AppTheme.alertRed),
+                          const Spacer(),
+                          if (cartProvider.itemCount > 0)
+                            TextButton(
+                              onPressed: () {
+                                cartProvider.clearCart();
+                              },
+                              child: const Text(
+                                'Clear',
+                                style: TextStyle(color: AppTheme.alertRed),
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  
-                  // Cart content
-                  Expanded(
-                    child: cartProvider.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                    
+                    // Cart content
+                    Expanded(
+                      child: cartProvider.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.shopping_cart_outlined,
+                                    size: 64,
+                                    color: AppTheme.textSecondary.withOpacity(0.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Cart is empty',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView(
+                              controller: scrollController,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
                               children: [
-                                Icon(
-                                  Icons.shopping_cart_outlined,
-                                  size: 64,
-                                  color: AppTheme.textSecondary.withOpacity(0.5),
-                                ),
+                                ...cartProvider.items.map((item) => _buildCartItem(item, cartProvider)),
                                 const SizedBox(height: 16),
-                                Text(
-                                  'Cart is empty',
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 16,
+                                
+                                // Add Discount Button
+                                InkWell(
+                                  onTap: () => _showDiscountDialog(cartProvider),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.5)),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.local_offer, color: AppTheme.primaryGreen, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          cartProvider.discount > 0 
+                                            ? 'Discount: ${cartProvider.discountAmount.toStringAsFixed(2)}'
+                                            : 'Add Discount',
+                                          style: const TextStyle(color: AppTheme.primaryGreen, fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
+                                const SizedBox(height: 16),
+                                
+                                _buildCartSummary(cartProvider),
+                                const SizedBox(height: 100),
                               ],
                             ),
-                          )
-                        : ListView(
-                            controller: scrollController,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    
+                    // Proceed button - ALWAYS VISIBLE
+                    if (cartProvider.itemCount > 0)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.backgroundDark,
+                          border: Border(
+                            top: BorderSide(color: AppTheme.borderDark.withOpacity(0.5)),
+                          ),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SelectCustomerScreen(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryGreen,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            minimumSize: const Size(double.infinity, 56),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              ...cartProvider.items.map((item) => _buildCartItem(item, cartProvider)),
-                              const SizedBox(height: 16),
-                              _buildCartSummary(cartProvider),
-                              const SizedBox(height: 100),
+                              Text(
+                                'Proceed to Payment',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(Icons.arrow_forward),
                             ],
                           ),
-                  ),
-                  
-                  // Proceed button
-                  if (cartProvider.itemCount > 0)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.backgroundDark,
-                        border: Border(
-                          top: BorderSide(color: AppTheme.borderDark.withOpacity(0.5)),
                         ),
                       ),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SelectCustomerScreen(),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryGreen,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Proceed to Payment',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             );
           },

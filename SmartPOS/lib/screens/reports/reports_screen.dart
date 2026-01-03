@@ -87,7 +87,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           fontWeight: FontWeight.bold,
         ),
       ),
-      centerTitle: false,
+      centerTitle: true,
       elevation: 0,
     );
   }
