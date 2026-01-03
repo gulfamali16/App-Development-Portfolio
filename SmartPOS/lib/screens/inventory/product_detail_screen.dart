@@ -4,8 +4,10 @@ import 'package:fluttertoast/fluttertoast.dart';
 import '../../config/theme.dart';
 import '../../config/routes.dart';
 import '../../models/product_model.dart';
+import '../../models/stock_movement_model.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/category_provider.dart';
+import '../../services/inventory_service.dart';
 
 /// Product Detail Screen - Shows detailed information about a product
 class ProductDetailScreen extends StatefulWidget {
@@ -366,25 +368,140 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceDark,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
-            ),
-            child: const Center(
-              child: Text(
-                'No stock movements yet',
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
-            ),
+          FutureBuilder<List<StockMovementModel>>(
+            future: InventoryService().getStockMovementsByProduct(widget.product.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AppTheme.primaryGreen),
+                );
+              }
+              
+              if (snapshot.hasError) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'Error loading stock history',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              
+              final movements = snapshot.data ?? [];
+              
+              if (movements.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'No stock movements yet',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: movements.length,
+                itemBuilder: (context, index) {
+                  return _buildStockHistoryItem(movements[index]);
+                },
+              );
+            },
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildStockHistoryItem(StockMovementModel movement) {
+    final isStockIn = movement.type == 'in';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isStockIn 
+                ? const Color(0xFF00E676).withOpacity(0.1)
+                : const Color(0xFFFF5252).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isStockIn ? Icons.arrow_downward : Icons.arrow_upward,
+              color: isStockIn ? const Color(0xFF00E676) : const Color(0xFFFF5252),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isStockIn ? 'Stock In' : 'Stock Out',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  movement.reason ?? 'No reason',
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${isStockIn ? '+' : '-'}${movement.quantity}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isStockIn ? const Color(0xFF00E676) : const Color(0xFFFF5252),
+                ),
+              ),
+              Text(
+                _formatDate(movement.createdAt),
+                style: const TextStyle(color: Colors.grey, fontSize: 10),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 }

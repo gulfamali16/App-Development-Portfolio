@@ -32,6 +32,12 @@ class _MainScreenState extends State<MainScreen> {
     ];
   }
 
+  void switchTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
