@@ -13,6 +13,10 @@ import '../screens/inventory/stock_in_screen.dart';
 import '../screens/inventory/stock_out_screen.dart';
 import '../screens/inventory/add_category_screen.dart';
 import '../screens/inventory/categories_screen.dart';
+import '../screens/customers/add_customer_screen.dart';
+import '../screens/payments/outstanding_balances_screen.dart';
+import '../screens/payments/ledger_adjustment_screen.dart';
+import '../screens/sales/sales_history_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../models/product_model.dart';
@@ -35,6 +39,10 @@ class AppRoutes {
   static const String stockOut = '/stock-out';
   static const String settings = '/settings';
   static const String notifications = '/notifications';
+  static const String addCustomer = '/add-customer';
+  static const String outstandingBalances = '/outstanding-balances';
+  static const String ledgerAdjustment = '/ledger-adjustment';
+  static const String salesHistory = '/sales-history';
 
   // Route generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -77,6 +85,18 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const SettingsScreen());
       case notifications:
         return MaterialPageRoute(builder: (_) => const NotificationsScreen());
+      case addCustomer:
+        return MaterialPageRoute(builder: (_) => const AddCustomerScreen());
+      case outstandingBalances:
+        return MaterialPageRoute(builder: (_) => const OutstandingBalancesScreen());
+      case ledgerAdjustment:
+        final customerId = settings.arguments as String?;
+        if (customerId == null) {
+          return _errorRoute('Customer ID is required');
+        }
+        return MaterialPageRoute(builder: (_) => LedgerAdjustmentScreen(customerId: customerId));
+      case salesHistory:
+        return MaterialPageRoute(builder: (_) => const SalesHistoryScreen());
       default:
         return _errorRoute('No route defined for ${settings.name}');
     }
