@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -161,10 +162,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             color: AppTheme.primaryGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            Icons.category,
-            color: AppTheme.primaryGreen,
-            size: 32,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: _buildCategoryImage(category.imageUrl),
           ),
         ),
         title: Text(
@@ -243,6 +243,37 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryImage(String? imageUrl) {
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      // Check if it's a local file path or network URL
+      if (imageUrl.startsWith('/') || imageUrl.startsWith('file://')) {
+        return Image.file(
+          File(imageUrl),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+        );
+      } else {
+        return Image.network(
+          imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+        );
+      }
+    }
+    return _buildImagePlaceholder();
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Container(
+      color: AppTheme.primaryGreen.withOpacity(0.1),
+      child: const Icon(
+        Icons.category,
+        color: AppTheme.primaryGreen,
+        size: 32,
       ),
     );
   }

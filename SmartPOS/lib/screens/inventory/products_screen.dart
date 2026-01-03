@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -90,57 +91,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget _buildHeader(BuildContext context, String userName) {
     return Container(
       padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Hello,',
-                  style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  userName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.white),
-            onPressed: () => Navigator.pushNamed(context, AppRoutes.settings),
-          ),
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.alertRed,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+      child: const Text(
+        'Products',
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -554,10 +511,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 color: AppTheme.backgroundDark,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                Icons.inventory_2,
-                color: AppTheme.primaryGreen.withOpacity(0.5),
-                size: 36,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: _buildProductImage(product.imageUrl),
               ),
             ),
             const SizedBox(width: 12),
@@ -611,6 +567,37 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildProductImage(String? imageUrl) {
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      // Check if it's a local file path or network URL
+      if (imageUrl.startsWith('/') || imageUrl.startsWith('file://')) {
+        return Image.file(
+          File(imageUrl),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+        );
+      } else {
+        return Image.network(
+          imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+        );
+      }
+    }
+    return _buildImagePlaceholder();
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Container(
+      color: const Color(0xFF2A2A2A),
+      child: Icon(
+        Icons.inventory_2,
+        color: AppTheme.primaryGreen.withOpacity(0.5),
+        size: 36,
       ),
     );
   }

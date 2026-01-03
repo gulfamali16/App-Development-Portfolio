@@ -81,17 +81,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
       automaticallyImplyLeading: false,
       title: const Text(
         'Reports',
-        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.filter_list, color: Colors.white),
-          onPressed: () {
-            // Show filter options
-            _showFilterDialog();
-          },
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
         ),
-      ],
+      ),
+      centerTitle: false,
+      elevation: 0,
     );
   }
 

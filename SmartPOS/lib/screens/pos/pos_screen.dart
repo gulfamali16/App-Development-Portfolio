@@ -49,48 +49,60 @@ class _POSScreenState extends State<POSScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
-      appBar: _buildAppBar(),
       body: Stack(
         children: [
-          Column(
-            children: [
-              _buildSearchBar(),
-              _buildCategoryFilter(),
-              Expanded(child: _buildProductGrid()),
-            ],
+          // Main content (product grid) - takes full screen
+          Positioned.fill(
+            child: Column(
+              children: [
+                // App bar
+                _buildAppBar(),
+                // Search bar
+                _buildSearchBar(),
+                // Category filter
+                _buildCategoryFilter(),
+                // Product grid (scrollable)
+                Expanded(
+                  child: _buildProductGrid(),
+                ),
+                // Space for collapsed cart
+                const SizedBox(height: 140),
+              ],
+            ),
           ),
+          
+          // Draggable cart panel - on top of everything
           _buildCartPanel(),
         ],
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: AppTheme.surfaceDark,
-      automaticallyImplyLeading: false,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 8),
-        child: Consumer<AuthProvider>(
-          builder: (context, authProvider, child) {
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AppTheme.primaryGreen,
-                  child: Text(
-                    authProvider.user?.name?.substring(0, 1).toUpperCase() ?? 'U',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+  Widget _buildAppBar() {
+    return Container(
+      color: AppTheme.surfaceDark,
+      padding: const EdgeInsets.only(top: 40, left: 8, right: 8, bottom: 8),
+      child: Row(
+        children: [
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AppTheme.primaryGreen,
+                    child: Text(
+                      authProvider.user?.name?.substring(0, 1).toUpperCase() ?? 'U',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
+                  const SizedBox(width: 8),
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -112,43 +124,41 @@ class _POSScreenState extends State<POSScreen> {
                       ),
                     ],
                   ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-      leadingWidth: 150,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.settings_outlined, color: Colors.white),
-          onPressed: () {
-            Navigator.pushNamed(context, '/settings');
-          },
-        ),
-        Stack(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-              onPressed: () {
-                Navigator.pushNamed(context, '/notifications');
-              },
-            ),
-            Positioned(
-              right: 8,
-              top: 8,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: AppTheme.alertRed,
-                  shape: BoxShape.circle,
+                ],
+              );
+            },
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: Colors.white),
+            onPressed: () {
+              Navigator.pushNamed(context, '/settings');
+            },
+          ),
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/notifications');
+                },
+              ),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.alertRed,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -388,34 +398,44 @@ class _POSScreenState extends State<POSScreen> {
   Widget _buildCartPanel() {
     return DraggableScrollableSheet(
       controller: _cartController,
-      initialChildSize: 0.15,
-      minChildSize: 0.15,
-      maxChildSize: 0.9,
+      initialChildSize: 0.18,
+      minChildSize: 0.18,
+      maxChildSize: 0.85,
+      snap: true,
+      snapSizes: const [0.18, 0.5, 0.85],
       builder: (context, scrollController) {
         return Consumer<CartProvider>(
           builder: (context, cartProvider, child) {
             return Container(
               decoration: BoxDecoration(
-                color: AppTheme.surfaceDark,
+                color: const Color(0xFF1E1E1E),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 10,
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),
                 ],
               ),
               child: Column(
                 children: [
-                  // Drag handle
-                  Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppTheme.textSecondary.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(2),
+                  // Drag handle - THIS IS KEY FOR DRAGGING
+                  GestureDetector(
+                    onVerticalDragUpdate: (_) {}, // Enable drag
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: Container(
+                          width: 48,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   

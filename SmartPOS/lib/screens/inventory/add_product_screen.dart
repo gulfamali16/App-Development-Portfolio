@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../config/theme.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/category_provider.dart';
@@ -29,6 +31,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   String? _selectedCategoryId;
   String _selectedUnitType = 'item';
   double? _projectedMargin;
+  File? _selectedImage;
 
   @override
   void initState() {
@@ -82,6 +85,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       minStock: int.parse(_minStockController.text),
       unitType: _selectedUnitType,
       categoryId: _selectedCategoryId,
+      imageUrl: _selectedImage?.path,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -360,16 +364,61 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Color(0xFF00E676)),
+              title: const Text('Take Photo', style: TextStyle(color: Colors.white)),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await picker.pickImage(
+                  source: ImageSource.camera,
+                  maxWidth: 1024,
+                  maxHeight: 1024,
+                  imageQuality: 85,
+                );
+                if (image != null) {
+                  setState(() => _selectedImage = File(image.path));
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Color(0xFF00E676)),
+              title: const Text('Choose from Gallery', style: TextStyle(color: Colors.white)),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await picker.pickImage(
+                  source: ImageSource.gallery,
+                  maxWidth: 1024,
+                  maxHeight: 1024,
+                  imageQuality: 85,
+                );
+                if (image != null) {
+                  setState(() => _selectedImage = File(image.path));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildImageUploadSection() {
-    return InkWell(
-      onTap: () {
-        // TODO: Implement image picker
-        Fluttertoast.showToast(
-          msg: 'Image upload coming soon',
-          backgroundColor: Colors.blue,
-          textColor: Colors.white,
-        );
-      },
+    return GestureDetector(
+      onTap: _pickImage,
       child: Container(
         width: double.infinity,
         height: 200,
@@ -382,7 +431,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
             style: BorderStyle.solid,
           ),
         ),
-        child: Column(
+        child: _selectedImage != null
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.file(_selectedImage!, fit: BoxFit.cover),
+            )
+          : Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(

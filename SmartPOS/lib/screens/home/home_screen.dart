@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../utils/constants.dart';
+import '../main_screen.dart';
 
 /// Home screen dashboard for authenticated users (used when navigating directly)
 class HomeScreen extends StatefulWidget {
@@ -324,7 +325,11 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                 Icons.point_of_sale,
                 AppTheme.primaryGreen,
                 isLarge: true,
-                onTap: () => _showComingSoon('POS'),
+                onTap: () {
+                  // Switch to POS tab (index 2)
+                  final mainState = context.findAncestorStateOfType<_MainScreenState>();
+                  mainState?.switchTab(2);
+                },
               ),
               const SizedBox(height: 12),
               Row(
@@ -356,7 +361,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                       'Add Customer',
                       Icons.person_add,
                       AppTheme.surfaceDark,
-                      onTap: () => _showComingSoon('Add Customer'),
+                      onTap: () => Navigator.pushNamed(context, '/add-customer'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -365,10 +370,17 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                       'Payment',
                       Icons.payment,
                       AppTheme.surfaceDark,
-                      onTap: () => _showComingSoon('Payment'),
+                      onTap: () => Navigator.pushNamed(context, '/outstanding-balances'),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              _buildActionButton(
+                'Orders',
+                Icons.receipt_long,
+                AppTheme.surfaceDark,
+                onTap: () => Navigator.pushNamed(context, '/sales-history'),
               ),
             ],
           ),
