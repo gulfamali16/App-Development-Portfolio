@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
@@ -267,17 +268,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
               // Avatar
               Opacity(
                 opacity: isInactive ? 0.5 : 1.0,
-                child: CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
-                  child: Text(
-                    customer.initials,
-                    style: const TextStyle(
-                      color: AppTheme.primaryGreen,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                child: _buildCustomerAvatar(customer),
               ),
               const SizedBox(width: 12),
               
@@ -353,6 +344,39 @@ class _CustomersScreenState extends State<CustomersScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomerAvatar(CustomerModel customer) {
+    if (customer.photoUrl != null && customer.photoUrl!.isNotEmpty) {
+      // Check if it's a local file path or network URL
+      if (customer.photoUrl!.startsWith('/') || customer.photoUrl!.startsWith('file://')) {
+        return CircleAvatar(
+          radius: 24,
+          backgroundImage: FileImage(File(customer.photoUrl!)),
+          onBackgroundImageError: (_, __) {},
+          child: Container(), // Empty container for error fallback
+        );
+      } else {
+        return CircleAvatar(
+          radius: 24,
+          backgroundImage: NetworkImage(customer.photoUrl!),
+          onBackgroundImageError: (_, __) {},
+          child: Container(), // Empty container for error fallback
+        );
+      }
+    }
+    // Fallback to initials
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
+      child: Text(
+        customer.initials,
+        style: const TextStyle(
+          color: AppTheme.primaryGreen,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
