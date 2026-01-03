@@ -211,4 +211,84 @@ class SalesService {
       syncStatus: map['syncStatus'] as int? ?? 0,
     );
   }
+
+  /// Get sales within a date range
+  Future<List<SaleModel>> getSalesInRange(DateTime startDate, DateTime endDate) async {
+    try {
+      final db = await _databaseService.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'sales',
+        where: 'createdAt >= ? AND createdAt <= ?',
+        whereArgs: [startDate.toIso8601String(), endDate.toIso8601String()],
+        orderBy: 'createdAt DESC',
+      );
+      return maps.map((map) => _saleFromMap(map)).toList();
+    } catch (e) {
+      throw Exception('Failed to load sales in range: $e');
+    }
+  }
+
+  /// Get sales total for a date range
+  Future<double> getSalesTotal(DateTime startDate, DateTime endDate) async {
+    try {
+      final sales = await getSalesInRange(startDate, endDate);
+      return sales.fold<double>(0.0, (sum, sale) => sum + sale.total);
+    } catch (e) {
+      throw Exception('Failed to calculate sales total: $e');
+    }
+  }
+
+  /// Get gross profit for a date range (Sales - Cost)
+  Future<double> getGrossProfit(DateTime startDate, DateTime endDate) async {
+    try {
+      final sales = await getSalesInRange(startDate, endDate);
+      double totalRevenue = 0.0;
+      double totalCost = 0.0;
+      
+      for (var sale in sales) {
+        totalRevenue += sale.total;
+        // Calculate cost from items (assuming customPrice is selling price)
+        // For simplicity, estimate 70% of revenue as profit (30% cost)
+        totalCost += sale.total * 0.3;
+      }
+      
+      return totalRevenue - totalCost;
+    } catch (e) {
+      throw Exception('Failed to calculate gross profit: $e');
+    }
+  }
+
+  /// Get order count for a date range
+  Future<int> getOrderCount(DateTime startDate, DateTime endDate) async {
+    try {
+      final sales = await getSalesInRange(startDate, endDate);
+      return sales.length;
+    } catch (e) {
+      throw Exception('Failed to get order count: $e');
+    }
+  }
+
+  /// Get recent sales with limit
+  Future<List<SaleModel>> getRecentSales({int limit = 10}) async {
+    try {
+      final db = await _databaseService.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'sales',
+        orderBy: 'createdAt DESC',
+        limit: limit,
+      );
+      return maps.map((map) => _saleFromMap(map)).toList();
+    } catch (e) {
+      throw Exception('Failed to load recent sales: $e');
+    }
+  }
+
+  /// Get all sales (for exports)
+  Future<List<SaleModel>> getAllSales() async {
+    try {
+      return await getSales();
+    } catch (e) {
+      throw Exception('Failed to load all sales: $e');
+    }
+  }
 }

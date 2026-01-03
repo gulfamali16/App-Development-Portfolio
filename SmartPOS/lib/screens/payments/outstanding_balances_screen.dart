@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
@@ -273,18 +274,8 @@ class _OutstandingBalancesScreenState extends State<OutstandingBalancesScreen> w
       ),
       child: Row(
         children: [
-          // Avatar
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: balanceColor.withOpacity(0.2),
-            child: Text(
-              customer.initials,
-              style: TextStyle(
-                color: balanceColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+          // Avatar with photo support
+          _buildCustomerAvatar(customer),
           const SizedBox(width: 12),
           
           // Customer info
@@ -356,6 +347,57 @@ class _OutstandingBalancesScreenState extends State<OutstandingBalancesScreen> w
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCustomerAvatar(CustomerModel customer) {
+    if (customer.photoUrl != null && customer.photoUrl!.isNotEmpty) {
+      // Check if it's a local file path or network URL
+      if (customer.photoUrl!.startsWith('/') || customer.photoUrl!.startsWith('file://')) {
+        return CircleAvatar(
+          radius: 24,
+          backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
+          child: ClipOval(
+            child: Image.file(
+              File(customer.photoUrl!),
+              fit: BoxFit.cover,
+              width: 48,
+              height: 48,
+              errorBuilder: (_, __, ___) => _buildAvatarFallback(customer),
+            ),
+          ),
+        );
+      } else {
+        return CircleAvatar(
+          radius: 24,
+          backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
+          child: ClipOval(
+            child: Image.network(
+              customer.photoUrl!,
+              fit: BoxFit.cover,
+              width: 48,
+              height: 48,
+              errorBuilder: (_, __, ___) => _buildAvatarFallback(customer),
+            ),
+          ),
+        );
+      }
+    }
+
+    return _buildAvatarFallback(customer);
+  }
+
+  Widget _buildAvatarFallback(CustomerModel customer) {
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
+      child: Text(
+        customer.initials,
+        style: const TextStyle(
+          color: AppTheme.primaryGreen,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/sales_service.dart';
+import '../../services/export_service.dart';
 
 /// Reports screen with KPI cards and detailed reports
 class ReportsScreen extends StatefulWidget {
@@ -15,10 +17,14 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   final SalesService _salesService = SalesService();
+  final ExportService _exportService = ExportService();
   String _selectedPeriod = 'This Month';
   double _totalSales = 0.0;
   double _grossProfit = 0.0;
   int _totalOrders = 0;
+  double _salesChange = 0.0;
+  double _profitChange = 0.0;
+  double _ordersChange = 0.0;
   bool _isLoading = true;
 
   @override
@@ -30,18 +36,48 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      // Get today's sales as sample data
-      final todaySales = await _salesService.getTodaysSalesTotal();
-      final todayOrders = await _salesService.getTodaysSales();
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final startOfLastMonth = DateTime(now.year, now.month - 1, 1);
+      final endOfLastMonth = DateTime(now.year, now.month, 0, 23, 59, 59);
+      
+      // This month's data
+      final thisMonthSales = await _salesService.getSalesTotal(startOfMonth, now);
+      final thisMonthProfit = await _salesService.getGrossProfit(startOfMonth, now);
+      final thisMonthOrders = await _salesService.getOrderCount(startOfMonth, now);
+      
+      // Last month's data for comparison
+      final lastMonthSales = await _salesService.getSalesTotal(startOfLastMonth, endOfLastMonth);
+      final lastMonthProfit = await _salesService.getGrossProfit(startOfLastMonth, endOfLastMonth);
+      final lastMonthOrders = await _salesService.getOrderCount(startOfLastMonth, endOfLastMonth);
+      
+      // Calculate percentage changes
+      final salesChange = lastMonthSales > 0 
+        ? ((thisMonthSales - lastMonthSales) / lastMonthSales) * 100 
+        : 0.0;
+      final profitChange = lastMonthProfit > 0
+        ? ((thisMonthProfit - lastMonthProfit) / lastMonthProfit) * 100
+        : 0.0;
+      final ordersChange = lastMonthOrders > 0
+        ? ((thisMonthOrders - lastMonthOrders) / lastMonthOrders) * 100
+        : 0.0;
       
       setState(() {
-        _totalSales = todaySales * 30; // Simulate monthly data
-        _grossProfit = _totalSales * 0.3; // 30% profit margin
-        _totalOrders = todayOrders.length * 30;
+        _totalSales = thisMonthSales;
+        _grossProfit = thisMonthProfit;
+        _totalOrders = thisMonthOrders;
+        _salesChange = salesChange;
+        _profitChange = profitChange;
+        _ordersChange = ordersChange;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
+      Fluttertoast.showToast(
+        msg: 'Error loading report data: $e',
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
     }
   }
 
@@ -87,7 +123,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           fontWeight: FontWeight.bold,
         ),
       ),
-      centerTitle: false,
+      centerTitle: true,
       elevation: 0,
     );
   }
@@ -131,23 +167,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
           _buildKPICard(
             title: 'Total Sales',
             value: '\$${_totalSales.toStringAsFixed(2)}',
-            trend: '+12.5%',
+            trend: '${_salesChange >= 0 ? '+' : ''}${_salesChange.toStringAsFixed(1)}%',
             color: AppTheme.primaryBlue,
             chartData: _generateSampleData(),
+            isPositive: _salesChange >= 0,
           ),
           _buildKPICard(
             title: 'Gross Profit',
             value: '\$${_grossProfit.toStringAsFixed(2)}',
-            trend: '+8.3%',
+            trend: '${_profitChange >= 0 ? '+' : ''}${_profitChange.toStringAsFixed(1)}%',
             color: AppTheme.primaryGreen,
             chartData: _generateSampleData(),
+            isPositive: _profitChange >= 0,
           ),
           _buildKPICard(
             title: 'Total Orders',
             value: _totalOrders.toString(),
-            trend: '+15.2%',
+            trend: '${_ordersChange >= 0 ? '+' : ''}${_ordersChange.toStringAsFixed(1)}%',
             color: const Color(0xFF9C27B0),
             chartData: _generateSampleData(),
+            isPositive: _ordersChange >= 0,
           ),
         ],
       ),
@@ -160,6 +199,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     required String trend,
     required Color color,
     required List<FlSpot> chartData,
+    required bool isPositive,
   }) {
     return Container(
       width: 280,
@@ -186,13 +226,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withOpacity(0.2),
+                  color: (isPositive ? AppTheme.primaryGreen : AppTheme.alertRed).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   trend,
-                  style: const TextStyle(
-                    color: AppTheme.primaryGreen,
+                  style: TextStyle(
+                    color: isPositive ? AppTheme.primaryGreen : AppTheme.alertRed,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -372,14 +412,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: _buildActionButton(
                 icon: Icons.picture_as_pdf,
                 label: 'Export PDF',
-                onTap: () {
-                  // Show coming soon message
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Export PDF - Coming Soon'),
-                      backgroundColor: AppTheme.primaryGreen,
-                    ),
-                  );
+                onTap: () async {
+                  try {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Generating PDF...'),
+                        backgroundColor: AppTheme.primaryBlue,
+                      ),
+                    );
+                    await _exportService.exportPDF();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('PDF exported successfully!'),
+                          backgroundColor: AppTheme.primaryGreen,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: AppTheme.alertRed,
+                        ),
+                      );
+                    }
+                  }
                 },
               ),
             ),
@@ -388,14 +447,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: _buildActionButton(
                 icon: Icons.email,
                 label: 'Email Report',
-                onTap: () {
-                  // Show coming soon message
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Email Report - Coming Soon'),
-                      backgroundColor: AppTheme.primaryGreen,
-                    ),
-                  );
+                onTap: () async {
+                  try {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Preparing report...'),
+                        backgroundColor: AppTheme.primaryBlue,
+                      ),
+                    );
+                    await _exportService.emailReport();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Report ready to share!'),
+                          backgroundColor: AppTheme.primaryGreen,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: AppTheme.alertRed,
+                        ),
+                      );
+                    }
+                  }
                 },
               ),
             ),

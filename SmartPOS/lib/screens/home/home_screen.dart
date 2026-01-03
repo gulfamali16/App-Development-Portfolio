@@ -6,8 +6,20 @@ import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/product_provider.dart';
+import '../../providers/sales_provider.dart';
 import '../../utils/constants.dart';
+import '../../services/sales_service.dart';
 import '../main_screen.dart';
+
+/// Helper function to format numbers with K, M suffix
+String formatNumber(double value) {
+  if (value >= 1000000) {
+    return '${(value / 1000000).toStringAsFixed(1)}M';
+  } else if (value >= 1000) {
+    return '${(value / 1000).toStringAsFixed(1)}K';
+  }
+  return value.toStringAsFixed(0);
+}
 
 /// Home screen dashboard for authenticated users (used when navigating directly)
 class HomeScreen extends StatefulWidget {
@@ -326,7 +338,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                 Icons.point_of_sale,
                 AppTheme.primaryGreen,
                 isLarge:  true,
-                onTap:  () => Navigator.pushNamed(context, '/pos'),
+                onTap:  () => Navigator.pushNamed(context, AppRoutes.pos),
               ),
               const SizedBox(height: 12),
               Row(
@@ -358,7 +370,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                       'Add Customer',
                       Icons.person_add,
                       AppTheme.surfaceDark,
-                      onTap: () => Navigator.pushNamed(context, '/add-customer'),
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.addCustomer),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -367,17 +379,10 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                       'Payment',
                       Icons.payment,
                       AppTheme.surfaceDark,
-                      onTap: () => Navigator.pushNamed(context, '/outstanding-balances'),
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.outstandingBalances),
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              _buildActionButton(
-                'Orders',
-                Icons.receipt_long,
-                AppTheme.surfaceDark,
-                onTap: () => Navigator.pushNamed(context, '/sales-history'),
               ),
             ],
           ),
@@ -513,7 +518,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                 ),
               ),
               TextButton(
-                onPressed: () => _showComingSoon('View All'),
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.salesHistory),
                 child: const Text(
                   'View All',
                   style: TextStyle(
@@ -525,35 +530,95 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
             ],
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceDark,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
-            ),
-            child: Center(
-              child: Text(
-                'No recent sales',
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
-            ),
+          FutureBuilder(
+            future: SalesService().getTodaysSales(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(color: AppTheme.primaryGreen),
+                  ),
+                );
+              }
+              
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'No recent sales',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final sales = snapshot.data!.take(5).toList();
+              return Column(
+                children: sales.map((sale) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryGreen.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.receipt, color: AppTheme.primaryGreen, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              sale.customerName,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              '${sale.items.length} items',
+                              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '\$${sale.total.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                )).toList(),
+              );
+            },
           ),
         ],
       ),
-    );
-  }
-
-  void _showComingSoon(String feature) {
-    Fluttertoast.showToast(
-      msg: '$feature feature coming soon',
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      backgroundColor: Colors.blue,
-      textColor: Colors.white,
     );
   }
 }
