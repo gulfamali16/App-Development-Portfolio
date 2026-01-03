@@ -25,7 +25,7 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
   Future<void> _loadSales() async {
     setState(() => _isLoading = true);
     try {
-      final sales = await _salesService.getAllSales();
+      final sales = await _salesService.getSales();
       setState(() {
         _sales = sales;
         _isLoading = false;

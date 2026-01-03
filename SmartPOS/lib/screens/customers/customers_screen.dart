@@ -355,29 +355,43 @@ class _CustomersScreenState extends State<CustomersScreen> {
       if (customer.photoUrl!.startsWith('/') || customer.photoUrl!.startsWith('file://')) {
         return CircleAvatar(
           radius: 24,
-          backgroundImage: FileImage(File(customer.photoUrl!)),
-          onBackgroundImageError: (_, __) {},
-          child: Container(), // Empty container for error fallback
+          backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
+          child: ClipOval(
+            child: Image.file(
+              File(customer.photoUrl!),
+              fit: BoxFit.cover,
+              width: 48,
+              height: 48,
+              errorBuilder: (_, __, ___) => _buildAvatarFallback(customer),
+            ),
+          ),
         );
       } else {
         return CircleAvatar(
           radius: 24,
-          backgroundImage: NetworkImage(customer.photoUrl!),
-          onBackgroundImageError: (_, __) {},
-          child: Container(), // Empty container for error fallback
+          backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
+          child: ClipOval(
+            child: Image.network(
+              customer.photoUrl!,
+              fit: BoxFit.cover,
+              width: 48,
+              height: 48,
+              errorBuilder: (_, __, ___) => _buildAvatarFallback(customer),
+            ),
+          ),
         );
       }
     }
     // Fallback to initials
-    return CircleAvatar(
-      radius: 24,
-      backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
-      child: Text(
-        customer.initials,
-        style: const TextStyle(
-          color: AppTheme.primaryGreen,
-          fontWeight: FontWeight.bold,
-        ),
+    return _buildAvatarFallback(customer);
+  }
+
+  Widget _buildAvatarFallback(CustomerModel customer) {
+    return Text(
+      customer.initials,
+      style: const TextStyle(
+        color: AppTheme.primaryGreen,
+        fontWeight: FontWeight.bold,
       ),
     );
   }

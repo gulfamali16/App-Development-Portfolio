@@ -44,6 +44,17 @@ class _LedgerAdjustmentScreenState extends State<LedgerAdjustmentScreen> {
     
     // Load customer
     final customers = customerProvider.customers;
+    if (customers.isEmpty) {
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: 'No customers found',
+          backgroundColor: Colors.red,
+        );
+        Navigator.pop(context);
+      }
+      return;
+    }
+    
     final customer = customers.firstWhere(
       (c) => c.id == widget.customerId,
       orElse: () => customers.first,
