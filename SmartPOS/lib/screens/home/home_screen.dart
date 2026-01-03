@@ -312,43 +312,40 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
           const Text(
             'Quick Actions',
             style: TextStyle(
-              color: Colors.white,
+              color:  Colors.white,
               fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontWeight:  FontWeight.bold,
             ),
           ),
           const SizedBox(height: 16),
           Column(
             children: [
+              // New Sale - Large button
               _buildActionButton(
                 'New Sale',
                 Icons.point_of_sale,
                 AppTheme.primaryGreen,
-                isLarge: true,
-                onTap: () {
-                  // Switch to POS tab (index 2)
-                  final mainState = context.findAncestorStateOfType<_MainScreenState>();
-                  mainState?.switchTab(2);
-                },
+                isLarge:  true,
+                onTap:  () => Navigator.pushNamed(context, '/pos'),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
-                    child: _buildActionButton(
+                    child:  _buildActionButton(
                       'Add Product',
                       Icons.add_shopping_cart,
                       AppTheme.surfaceDark,
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.addProduct),
+                      onTap: () => Navigator.pushNamed(context, AppRoutes. addProduct),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildActionButton(
+                    child:  _buildActionButton(
                       'Stock In',
                       Icons.add_box,
                       AppTheme.surfaceDark,
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.stockIn),
+                      onTap:  () => Navigator.pushNamed(context, AppRoutes.stockIn),
                     ),
                   ),
                 ],
