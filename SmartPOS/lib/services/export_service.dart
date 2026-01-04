@@ -20,7 +20,7 @@ class ExportService {
     
     // Get data
     final sales = await _salesService.getAllSales();
-    final products = await _productService.getProducts();
+    final products = await _productService.getAllProducts();
     final customers = await _customerService.getCustomers();
     
     // Calculate totals
@@ -87,7 +87,7 @@ class ExportService {
           ),
           pw.SizedBox(height: 10),
           pw.Text('Total Customers: ${customers.length}'),
-          pw.Text('Active Customers: ${customers.where((c) => c.status == 'active').length}'),
+          pw.Text('Total Customers: ${customers.length}'),
           
           pw.SizedBox(height: 20),
           
