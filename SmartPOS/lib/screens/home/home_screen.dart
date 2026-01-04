@@ -8,6 +8,7 @@ import '../../providers/inventory_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/sales_provider.dart';
 import '../../utils/constants.dart';
+import '../../utils/format_helper.dart';
 import '../../services/sales_service.dart';
 import '../main_screen.dart';
 
@@ -235,7 +236,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
               children: [
                 _buildStatCard(
                   'Today\'s Sales',
-                  '\$${todaysSales.toStringAsFixed(2)}',
+                  FormatHelper.formatMoney(todaysSales),
                   Icons.payments,
                   AppTheme.primaryBlue,
                   isGradient: true,
@@ -296,9 +297,11 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                 value,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Text(
@@ -450,52 +453,48 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   }
 
   Widget _buildLowStockAlert(int count) {
-    return InkWell(
-      onTap: () => Navigator.pushNamed(context, AppRoutes.products),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppTheme.alertRed.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.alertRed.withOpacity(0.3)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.alertRed.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.warning_amber, color: AppTheme.alertRed, size: 24),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.alertRed.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.alertRed.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.alertRed.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Low Stock Alert',
-                    style: TextStyle(
-                      color: AppTheme.alertRed,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+            child: const Icon(Icons.warning_amber, color: AppTheme.alertRed, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Low Stock Alert',
+                  style: TextStyle(
+                    color: AppTheme.alertRed,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
                   ),
-                  Text(
-                    '$count products below minimum stock level',
-                    style: TextStyle(
-                      color: AppTheme.alertRed.withOpacity(0.8),
-                      fontSize: 12,
-                    ),
+                ),
+                Text(
+                  '$count products below minimum stock level',
+                  style: TextStyle(
+                    color: AppTheme.alertRed.withOpacity(0.8),
+                    fontSize: 12,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const Icon(Icons.arrow_forward_ios, color: AppTheme.alertRed, size: 16),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -605,7 +604,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                         ),
                       ),
                       Text(
-                        '\$${sale.total.toStringAsFixed(2)}',
+                        FormatHelper.formatMoney(sale.total),
                         style: const TextStyle(
                           color: AppTheme.primaryGreen,
                           fontWeight: FontWeight.bold,

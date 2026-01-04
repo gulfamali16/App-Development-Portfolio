@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:uuid/uuid.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../config/theme.dart';
 import '../../models/product_model.dart';
 import '../../providers/product_provider.dart';
@@ -34,6 +36,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
   String? _selectedCategoryId;
   String _selectedUnitType = 'item';
   bool _isLoading = false;
+  File? _selectedImage;
+  String? _existingImageUrl;
 
   @override
   void initState() {
@@ -48,6 +52,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
     _minStockController = TextEditingController(text: widget.product.minStock.toString());
     _selectedCategoryId = widget.product.categoryId;
     _selectedUnitType = widget.product.unitType;
+    _existingImageUrl = widget.product.imageUrl;
 
     // Load categories
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -92,7 +97,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
         minStock: int.parse(_minStockController.text),
         unitType: _selectedUnitType,
         categoryId: _selectedCategoryId,
-        imageUrl: widget.product.imageUrl,
+        imageUrl: _selectedImage != null ? _selectedImage!.path : _existingImageUrl,
         createdAt: widget.product.createdAt,
         updatedAt: DateTime.now(),
         syncStatus: 0,
@@ -594,15 +599,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
   }
 
   Widget _buildImageUploadSection() {
-    return InkWell(
-      onTap: () {
-        // TODO: Implement image picker
-        Fluttertoast.showToast(
-          msg: 'Image upload coming soon',
-          backgroundColor: Colors.blue,
-          textColor: Colors.white,
-        );
-      },
+    return GestureDetector(
+      onTap: _pickImage,
       child: Container(
         width: double.infinity,
         height: 180,
@@ -615,39 +613,196 @@ class _EditProductScreenState extends State<EditProductScreen> {
             style: BorderStyle.solid,
           ),
         ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: _buildImageContent(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surfaceDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryGreen.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.add_photo_alternate,
-                size: 48,
-                color: AppTheme.primaryGreen,
-              ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppTheme.primaryGreen),
+              title: const Text('Take Photo', style: TextStyle(color: Colors.white)),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await picker.pickImage(
+                  source: ImageSource.camera,
+                  maxWidth: 1024,
+                  maxHeight: 1024,
+                  imageQuality: 85,
+                );
+                if (image != null) {
+                  setState(() {
+                    _selectedImage = File(image.path);
+                    _existingImageUrl = null;
+                  });
+                }
+              },
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Tap to update product image',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'PNG or JPG (Max 5MB)',
-              style: TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 12,
-              ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppTheme.primaryGreen),
+              title: const Text('Choose from Gallery', style: TextStyle(color: Colors.white)),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await picker.pickImage(
+                  source: ImageSource.gallery,
+                  maxWidth: 1024,
+                  maxHeight: 1024,
+                  imageQuality: 85,
+                );
+                if (image != null) {
+                  setState(() {
+                    _selectedImage = File(image.path);
+                    _existingImageUrl = null;
+                  });
+                }
+              },
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageContent() {
+    // Show newly selected image
+    if (_selectedImage != null) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.file(_selectedImage!, fit: BoxFit.cover),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: () => setState(() {
+                _selectedImage = null;
+                _existingImageUrl = widget.product.imageUrl;
+              }),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 20),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              color: Colors.black54,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: const Text(
+                'Tap to change image',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Show existing image
+    if (_existingImageUrl != null && _existingImageUrl!.isNotEmpty) {
+      Widget imageWidget;
+      if (_existingImageUrl!.startsWith('/') || _existingImageUrl!.startsWith('file://')) {
+        final path = _existingImageUrl!.replaceFirst('file://', '');
+        final file = File(path);
+        if (file.existsSync()) {
+          imageWidget = Image.file(file, fit: BoxFit.cover);
+        } else {
+          imageWidget = _buildPlaceholder();
+        }
+      } else {
+        imageWidget = Image.network(
+          _existingImageUrl!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+        );
+      }
+      
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          imageWidget,
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              color: Colors.black54,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: const Text(
+                'Tap to change image',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Show placeholder
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryGreen.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.add_photo_alternate,
+            size: 48,
+            color: AppTheme.primaryGreen,
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Tap to update product image',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'PNG or JPG (Max 5MB)',
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
         ),
       ),
     );

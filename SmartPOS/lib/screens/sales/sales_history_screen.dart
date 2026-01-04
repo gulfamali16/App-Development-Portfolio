@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../config/theme.dart';
 import '../../models/sale_model.dart';
 import '../../services/sales_service.dart';
+import '../../utils/format_helper.dart';
 
 /// Sales History Screen - Shows all sales/orders
 class SalesHistoryScreen extends StatefulWidget {

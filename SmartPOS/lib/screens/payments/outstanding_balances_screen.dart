@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/customer_provider.dart';
 import '../../models/customer_model.dart';
+import '../../widgets/customer_avatar.dart';
+import '../../utils/format_helper.dart';
 import 'ledger_adjustment_screen.dart';
 
 /// Outstanding Balances Screen - Shows customers with balances
@@ -136,10 +138,10 @@ class _OutstandingBalancesScreenState extends State<OutstandingBalancesScreen> w
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '\$${totalReceivables.toStringAsFixed(2)}',
+                  FormatHelper.formatMoney(totalReceivables),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -173,10 +175,10 @@ class _OutstandingBalancesScreenState extends State<OutstandingBalancesScreen> w
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '\$${totalCredits.toStringAsFixed(2)}',
+                  FormatHelper.formatMoney(totalCredits),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -275,7 +277,11 @@ class _OutstandingBalancesScreenState extends State<OutstandingBalancesScreen> w
       child: Row(
         children: [
           // Avatar with photo support
-          _buildCustomerAvatar(customer),
+          CustomerAvatar(
+            imageUrl: customer.photoUrl,
+            name: customer.name,
+            radius: 24,
+          ),
           const SizedBox(width: 12),
           
           // Customer info
@@ -308,10 +314,10 @@ class _OutstandingBalancesScreenState extends State<OutstandingBalancesScreen> w
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '\$${balanceAmount.toStringAsFixed(2)}',
+                FormatHelper.formatMoney(balanceAmount),
                 style: TextStyle(
                   color: balanceColor,
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -347,57 +353,6 @@ class _OutstandingBalancesScreenState extends State<OutstandingBalancesScreen> w
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCustomerAvatar(CustomerModel customer) {
-    if (customer.photoUrl != null && customer.photoUrl!.isNotEmpty) {
-      // Check if it's a local file path or network URL
-      if (customer.photoUrl!.startsWith('/') || customer.photoUrl!.startsWith('file://')) {
-        return CircleAvatar(
-          radius: 24,
-          backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
-          child: ClipOval(
-            child: Image.file(
-              File(customer.photoUrl!),
-              fit: BoxFit.cover,
-              width: 48,
-              height: 48,
-              errorBuilder: (_, __, ___) => _buildAvatarFallback(customer),
-            ),
-          ),
-        );
-      } else {
-        return CircleAvatar(
-          radius: 24,
-          backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
-          child: ClipOval(
-            child: Image.network(
-              customer.photoUrl!,
-              fit: BoxFit.cover,
-              width: 48,
-              height: 48,
-              errorBuilder: (_, __, ___) => _buildAvatarFallback(customer),
-            ),
-          ),
-        );
-      }
-    }
-
-    return _buildAvatarFallback(customer);
-  }
-
-  Widget _buildAvatarFallback(CustomerModel customer) {
-    return CircleAvatar(
-      radius: 24,
-      backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
-      child: Text(
-        customer.initials,
-        style: const TextStyle(
-          color: AppTheme.primaryGreen,
-          fontWeight: FontWeight.bold,
-        ),
       ),
     );
   }
