@@ -8,16 +8,7 @@ import '../../providers/product_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/product_model.dart';
-
-/// Helper function to format numbers with K, M suffix
-String formatNumber(double value) {
-  if (value >= 1000000) {
-    return '${(value / 1000000).toStringAsFixed(1)}M';
-  } else if (value >= 1000) {
-    return '${(value / 1000).toStringAsFixed(1)}K';
-  }
-  return value.toStringAsFixed(0);
-}
+import '../../utils/format_helper.dart';
 
 /// Products/Inventory screen
 class ProductsScreen extends StatefulWidget {
@@ -142,10 +133,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '\$${totalValue.toStringAsFixed(2)}',
+                    FormatHelper.formatMoney(totalValue),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -556,10 +547,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   Row(
                     children: [
                       Text(
-                        '\$${product.price.toStringAsFixed(2)}',
+                        FormatHelper.formatMoney(product.price),
                         style: const TextStyle(
                           color: AppTheme.primaryGreen,
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

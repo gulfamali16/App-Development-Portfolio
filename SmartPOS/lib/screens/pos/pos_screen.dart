@@ -7,6 +7,7 @@ import '../../providers/category_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../models/product_model.dart';
 import '../../models/category_model.dart';
+import '../../utils/format_helper.dart';
 import 'select_customer_screen.dart';
 
 /// POS Main Screen with product grid and cart panel
