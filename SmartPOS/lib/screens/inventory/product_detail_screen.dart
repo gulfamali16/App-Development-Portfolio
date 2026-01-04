@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'dart:io';
 import '../../config/theme.dart';
 import '../../config/routes.dart';
 import '../../models/product_model.dart';
@@ -8,6 +9,7 @@ import '../../models/stock_movement_model.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../services/inventory_service.dart';
+import '../../utils/format_helper.dart';
 
 /// Product Detail Screen - Shows detailed information about a product
 class ProductDetailScreen extends StatefulWidget {
@@ -117,13 +119,63 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Container(
       width: double.infinity,
       height: 250,
-      color: AppTheme.backgroundDark,
-      child: Icon(
-        Icons.inventory_2,
-        size: 100,
-        color: AppTheme.primaryGreen.withOpacity(0.5),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceDark,
+        borderRadius: BorderRadius.circular(0),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(0),
+        child: _buildImage(widget.product.imageUrl),
       ),
     );
+  }
+
+  Widget _buildImage(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return Center(
+        child: Icon(
+          Icons.inventory_2,
+          size: 100,
+          color: AppTheme.primaryGreen.withOpacity(0.5),
+        ),
+      );
+    }
+    
+    // Check if local file or network URL
+    if (imageUrl.startsWith('/') || imageUrl.startsWith('file://')) {
+      final path = imageUrl.replaceFirst('file://', '');
+      final file = File(path);
+      if (file.existsSync()) {
+        return Image.file(
+          file,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: 250,
+        );
+      }
+      // File doesn't exist, show fallback
+      return Center(
+        child: Icon(
+          Icons.broken_image,
+          color: Colors.grey,
+          size: 64,
+        ),
+      );
+    } else {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 250,
+        errorBuilder: (_, __, ___) => Center(
+          child: Icon(
+            Icons.broken_image,
+            color: Colors.grey,
+            size: 64,
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildProductInfo() {
@@ -198,20 +250,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           Row(
             children: [
               Text(
-                '\$${widget.product.price.toStringAsFixed(2)}',
+                FormatHelper.formatMoney(widget.product.price),
                 style: const TextStyle(
                   color: AppTheme.primaryGreen,
-                  fontSize: 32,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               if (widget.product.costPrice != null && widget.product.costPrice! < widget.product.price) ...[
                 const SizedBox(width: 12),
                 Text(
-                  '\$${widget.product.costPrice!.toStringAsFixed(2)}',
+                  FormatHelper.formatMoney(widget.product.costPrice!),
                   style: TextStyle(
                     color: AppTheme.textSecondary,
-                    fontSize: 18,
+                    fontSize: 16,
                     decoration: TextDecoration.lineThrough,
                   ),
                 ),
@@ -276,7 +328,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               Expanded(
                 child: _buildStatCard(
                   'Cost Price',
-                  '\$${widget.product.costPrice?.toStringAsFixed(2) ?? '0.00'}',
+                  FormatHelper.formatMoney(widget.product.costPrice ?? 0.0),
                   null,
                 ),
               ),

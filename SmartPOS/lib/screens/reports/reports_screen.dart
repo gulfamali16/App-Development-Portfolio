@@ -6,6 +6,7 @@ import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/sales_service.dart';
 import '../../services/export_service.dart';
+import '../../utils/format_helper.dart';
 
 /// Reports screen with KPI cards and detailed reports
 class ReportsScreen extends StatefulWidget {
@@ -51,16 +52,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final lastMonthProfit = await _salesService.getGrossProfit(startOfLastMonth, endOfLastMonth);
       final lastMonthOrders = await _salesService.getOrderCount(startOfLastMonth, endOfLastMonth);
       
-      // Calculate percentage changes
-      final salesChange = lastMonthSales > 0 
-        ? ((thisMonthSales - lastMonthSales) / lastMonthSales) * 100 
-        : 0.0;
-      final profitChange = lastMonthProfit > 0
-        ? ((thisMonthProfit - lastMonthProfit) / lastMonthProfit) * 100
-        : 0.0;
-      final ordersChange = lastMonthOrders > 0
-        ? ((thisMonthOrders - lastMonthOrders) / lastMonthOrders) * 100
-        : 0.0;
+      // Calculate percentage changes - Handle zero case properly
+      double salesChange = 0;
+      if (lastMonthSales > 0) {
+        salesChange = ((thisMonthSales - lastMonthSales) / lastMonthSales) * 100;
+      } else if (thisMonthSales > 0) {
+        salesChange = 100; // 100% increase if last month was 0
+      }
+      
+      double profitChange = 0;
+      if (lastMonthProfit > 0) {
+        profitChange = ((thisMonthProfit - lastMonthProfit) / lastMonthProfit) * 100;
+      } else if (thisMonthProfit > 0) {
+        profitChange = 100;
+      }
+      
+      double ordersChange = 0;
+      if (lastMonthOrders > 0) {
+        ordersChange = ((thisMonthOrders - lastMonthOrders) / lastMonthOrders.toDouble()) * 100;
+      } else if (thisMonthOrders > 0) {
+        ordersChange = 100;
+      }
       
       setState(() {
         _totalSales = thisMonthSales;
@@ -166,16 +178,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
         children: [
           _buildKPICard(
             title: 'Total Sales',
-            value: '\$${_totalSales.toStringAsFixed(2)}',
-            trend: '${_salesChange >= 0 ? '+' : ''}${_salesChange.toStringAsFixed(1)}%',
+            value: FormatHelper.formatMoney(_totalSales),
+            trend: FormatHelper.formatPercentage(_salesChange),
             color: AppTheme.primaryBlue,
             chartData: _generateSampleData(),
             isPositive: _salesChange >= 0,
           ),
           _buildKPICard(
             title: 'Gross Profit',
-            value: '\$${_grossProfit.toStringAsFixed(2)}',
-            trend: '${_profitChange >= 0 ? '+' : ''}${_profitChange.toStringAsFixed(1)}%',
+            value: FormatHelper.formatMoney(_grossProfit),
+            trend: FormatHelper.formatPercentage(_profitChange),
             color: AppTheme.primaryGreen,
             chartData: _generateSampleData(),
             isPositive: _profitChange >= 0,
@@ -183,7 +195,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           _buildKPICard(
             title: 'Total Orders',
             value: _totalOrders.toString(),
-            trend: '${_ordersChange >= 0 ? '+' : ''}${_ordersChange.toStringAsFixed(1)}%',
+            trend: FormatHelper.formatPercentage(_ordersChange),
             color: const Color(0xFF9C27B0),
             chartData: _generateSampleData(),
             isPositive: _ordersChange >= 0,
@@ -245,9 +257,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
             value,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 16),
           Expanded(
