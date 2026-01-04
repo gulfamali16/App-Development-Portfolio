@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/customer_provider.dart';
 import '../../models/customer_model.dart';
+import '../../widgets/customer_avatar.dart';
+import '../../utils/format_helper.dart';
 import 'add_customer_screen.dart';
 
 /// Customer list screen with filters
@@ -268,7 +270,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
               // Avatar
               Opacity(
                 opacity: isInactive ? 0.5 : 1.0,
-                child: _buildCustomerAvatar(customer),
+                child: CustomerAvatar(
+                  imageUrl: customer.photoUrl,
+                  name: customer.name,
+                  radius: 24,
+                ),
               ),
               const SizedBox(width: 12),
               
@@ -316,12 +322,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    customer.balance == 0 
-                        ? '\$0.00'
-                        : '${customer.isDebtor ?  "-" : "+"}\$${customer.balance. abs().toStringAsFixed(2)}',
+                    FormatHelper.formatMoney(customer.balance.abs(), showSign: customer.balance != 0),
                     style: TextStyle(
                       color: balanceColor,
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -345,53 +349,6 @@ class _CustomersScreenState extends State<CustomersScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCustomerAvatar(CustomerModel customer) {
-    if (customer.photoUrl != null && customer.photoUrl!.isNotEmpty) {
-      // Check if it's a local file path or network URL
-      if (customer.photoUrl!.startsWith('/') || customer.photoUrl!.startsWith('file://')) {
-        return CircleAvatar(
-          radius: 24,
-          backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
-          child: ClipOval(
-            child: Image.file(
-              File(customer.photoUrl!),
-              fit: BoxFit.cover,
-              width: 48,
-              height: 48,
-              errorBuilder: (_, __, ___) => _buildAvatarFallback(customer),
-            ),
-          ),
-        );
-      } else {
-        return CircleAvatar(
-          radius: 24,
-          backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
-          child: ClipOval(
-            child: Image.network(
-              customer.photoUrl!,
-              fit: BoxFit.cover,
-              width: 48,
-              height: 48,
-              errorBuilder: (_, __, ___) => _buildAvatarFallback(customer),
-            ),
-          ),
-        );
-      }
-    }
-    // Fallback to initials
-    return _buildAvatarFallback(customer);
-  }
-
-  Widget _buildAvatarFallback(CustomerModel customer) {
-    return Text(
-      customer.initials,
-      style: const TextStyle(
-        color: AppTheme.primaryGreen,
-        fontWeight: FontWeight.bold,
       ),
     );
   }

@@ -6,6 +6,8 @@ import '../../providers/customer_provider.dart';
 import '../../models/customer_model.dart';
 import '../../models/sale_model.dart';
 import '../../services/sales_service.dart';
+import '../../widgets/customer_avatar.dart';
+import '../../utils/format_helper.dart';
 
 /// Ledger Adjustment Screen - Manual balance adjustments for customers
 class LedgerAdjustmentScreen extends StatefulWidget {
@@ -199,17 +201,10 @@ class _LedgerAdjustmentScreenState extends State<LedgerAdjustmentScreen> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
+          CustomerAvatar(
+            imageUrl: _customer!.photoUrl,
+            name: _customer!.name,
             radius: 30,
-            backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
-            child: Text(
-              _customer!.initials,
-              style: const TextStyle(
-                color: AppTheme.primaryGreen,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -233,10 +228,10 @@ class _LedgerAdjustmentScreenState extends State<LedgerAdjustmentScreen> {
                   ),
                 ),
                 Text(
-                  '\$${_customer!.balance.abs().toStringAsFixed(2)}',
+                  FormatHelper.formatMoney(_customer!.balance.abs()),
                   style: TextStyle(
                     color: balanceColor,
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -506,10 +501,10 @@ class _LedgerAdjustmentScreenState extends State<LedgerAdjustmentScreen> {
                       ],
                     ),
                     Text(
-                      '\$${sale.total.toStringAsFixed(2)}',
+                      FormatHelper.formatMoney(sale.total),
                       style: const TextStyle(
                         color: AppTheme.primaryGreen,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
