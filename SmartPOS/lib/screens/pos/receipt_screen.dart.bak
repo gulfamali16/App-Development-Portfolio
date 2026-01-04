@@ -1,18 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_sms/flutter_sms.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../../config/theme.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/sales_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/customer_service.dart';
-import '../../models/customer_model.dart';
-import '../../utils/format_helper.dart';
 
-/// Receipt screen with SMS/WhatsApp/Email functionality
+/// Receipt screen with success animation
 class ReceiptScreen extends StatefulWidget {
   final String saleId;
   final String customerName;
@@ -32,8 +26,6 @@ class ReceiptScreen extends StatefulWidget {
 class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  CustomerModel? _customer;
-  final CustomerService _customerService = CustomerService();
 
   @override
   void initState() {
@@ -46,7 +38,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
       CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
     );
     _animationController.forward();
-    _loadData();
+    _loadSale();
   }
 
   @override
@@ -55,170 +47,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
     super.dispose();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadSale() async {
     final salesProvider = Provider.of<SalesProvider>(context, listen: false);
     await salesProvider.getSaleById(widget.saleId);
-    
-    // Try to load full customer details if we have customer ID from sale
-    final sale = salesProvider.currentSale;
-    if (sale?.customerId != null) {
-      try {
-        _customer = await _customerService.getCustomerById(sale!.customerId!);
-        setState(() {});
-      } catch (e) {
-        // Customer not found, that's okay
-      }
-    }
-  }
-
-  // Generate receipt message
-  String _generateReceiptMessage() {
-    final salesProvider = Provider.of<SalesProvider>(context, listen: false);
-    final sale = salesProvider.currentSale;
-    if (sale == null) return '';
-    
-    final buffer = StringBuffer();
-    buffer.writeln('🧾 PAYMENT RECEIPT');
-    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('Invoice: ${sale.invoiceNumber}');
-    buffer.writeln('Date: ${_formatDate(sale.createdAt)}');
-    buffer.writeln('Customer: ${widget.customerName}');
-    buffer.writeln('');
-    buffer.writeln('ITEMS:');
-    
-    for (final item in sale.items) {
-      buffer.writeln('• ${item.productName} x${item.quantity}');
-      buffer.writeln('  ${FormatHelper.formatMoney(item.lineTotal)}');
-    }
-    
-    buffer.writeln('');
-    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('Subtotal: ${FormatHelper.formatMoney(sale.subtotal)}');
-    if (sale.discount > 0) {
-      buffer.writeln('Discount: -${FormatHelper.formatMoney(sale.discount)}');
-    }
-    buffer.writeln('Tax: ${FormatHelper.formatMoney(sale.tax)}');
-    buffer.writeln('TOTAL: ${FormatHelper.formatMoney(sale.total)}');
-    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('');
-    buffer.writeln('Thank you for your purchase!');
-    buffer.writeln('SmartPOS');
-    
-    return buffer.toString();
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-  }
-
-  // 📩 SEND SMS
-  Future<void> _sendSMS(BuildContext context) async {
-    final phone = _customer?.phone ?? '';
-    if (phone.isEmpty) {
-      _showError(context, 'Customer phone number not available');
-      return;
-    }
-
-    // Request permission
-    final permission = await Permission.sms.request();
-    if (!permission.isGranted) {
-      _showError(context, 'SMS permission denied');
-      return;
-    }
-
-    try {
-      final message = _generateReceiptMessage();
-      await sendSMS(
-        message: message,
-        recipients: [phone],
-        sendDirect: true,
-      );
-      
-      _showSuccess(context, 'SMS sent successfully!');
-    } catch (e) {
-      // Fallback to SMS app if direct send fails
-      final uri = Uri.parse('sms:$phone?body=${Uri.encodeComponent(_generateReceiptMessage())}');
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      } else {
-        _showError(context, 'Could not send SMS');
-      }
-    }
-  }
-
-  // 💬 SEND WHATSAPP
-  Future<void> _sendWhatsApp(BuildContext context) async {
-    final phone = _customer?.phone ?? '';
-    if (phone.isEmpty) {
-      _showError(context, 'Customer phone number not available');
-      return;
-    }
-
-    // Clean phone number
-    String cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
-    // Add country code if not present
-    if (!cleanPhone.startsWith('+')) {
-      if (cleanPhone.startsWith('0')) {
-        cleanPhone = '+92${cleanPhone.substring(1)}';
-      } else {
-        cleanPhone = '+92$cleanPhone';
-      }
-    }
-
-    final message = Uri.encodeComponent(_generateReceiptMessage());
-    final whatsappUrl = 'https://wa.me/$cleanPhone?text=$message';
-    
-    final uri = Uri.parse(whatsappUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      _showError(context, 'WhatsApp not installed');
-    }
-  }
-
-  // 📧 SEND EMAIL
-  Future<void> _sendEmail(BuildContext context) async {
-    final email = widget.customerEmail ?? _customer?.email ?? '';
-    if (email.isEmpty) {
-      _showError(context, 'Customer email not available');
-      return;
-    }
-
-    // Validate email format
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(email)) {
-      _showError(context, 'Invalid customer email');
-      return;
-    }
-
-    final salesProvider = Provider.of<SalesProvider>(context, listen: false);
-    final sale = salesProvider.currentSale;
-    final subject = Uri.encodeComponent('Payment Receipt – Invoice ${sale?.invoiceNumber ?? ""}');
-    final body = Uri.encodeComponent(_generateReceiptMessage());
-    
-    final emailUri = Uri.parse('mailto:$email?subject=$subject&body=$body');
-    
-    if (await canLaunchUrl(emailUri)) {
-      await launchUrl(emailUri);
-    } else {
-      _showError(context, 'Could not open email app');
-    }
-  }
-
-  void _showSuccess(BuildContext context, String message) {
-    Fluttertoast.showToast(
-      msg: message,
-      backgroundColor: const Color(0xFF00E676),
-      textColor: Colors.black,
-    );
-  }
-
-  void _showError(BuildContext context, String message) {
-    Fluttertoast.showToast(
-      msg: message,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-    );
   }
 
   @override
@@ -234,6 +65,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
           IconButton(
             icon: const Icon(Icons.close, color: Colors.white),
             onPressed: () {
+              // Clear cart and go back to POS
               Provider.of<CartProvider>(context, listen: false).clearCart();
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
@@ -323,7 +155,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
 
                       // Invoice Details
                       _buildDetailRow('Invoice No.', sale?.invoiceNumber ?? widget.saleId.substring(0, 8).toUpperCase()),
-                      _buildDetailRow('Date', _formatDate(sale?.createdAt ?? DateTime.now())),
+                      _buildDetailRow('Date', _formatDate(DateTime.now())),
                       _buildDetailRow('Customer', widget.customerName),
                       _buildDetailRow('Cashier', authProvider.user?.name ?? 'User'),
                       const Divider(color: AppTheme.borderDark, height: 32),
@@ -351,7 +183,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
                                     ),
                                   ),
                                   Text(
-                                    FormatHelper.formatMoney(item.lineTotal),
+                                    '\$${item.lineTotal.toStringAsFixed(2)}',
                                     style: const TextStyle(color: Colors.white),
                                   ),
                                 ],
@@ -361,10 +193,10 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
 
                       // Totals
                       if (sale != null) ...[
-                        _buildDetailRow('Subtotal', FormatHelper.formatMoney(sale.subtotal)),
+                        _buildDetailRow('Subtotal', '\$${sale.subtotal.toStringAsFixed(2)}'),
                         if (sale.discount > 0)
-                          _buildDetailRow('Discount', '-${FormatHelper.formatMoney(sale.discount)}', isHighlight: true),
-                        _buildDetailRow('Tax (${sale.taxRate.toStringAsFixed(0)}%)', FormatHelper.formatMoney(sale.tax)),
+                          _buildDetailRow('Discount', '-\$${sale.discount.toStringAsFixed(2)}', isHighlight: true),
+                        _buildDetailRow('Tax (${sale.taxRate.toStringAsFixed(0)}%)', '\$${sale.tax.toStringAsFixed(2)}'),
                         const Divider(color: AppTheme.borderDark, height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -378,7 +210,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
                               ),
                             ),
                             Text(
-                              FormatHelper.formatMoney(sale.total),
+                              '\$${sale.total.toStringAsFixed(2)}',
                               style: const TextStyle(
                                 color: AppTheme.primaryGreen,
                                 fontSize: 24,
@@ -393,106 +225,85 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
                 ),
                 const SizedBox(height: 24),
 
-                // Send Receipt Section
-                const Text(
-                  'Send Receipt to Customer',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
                 // Action Buttons
                 Row(
                   children: [
-                    // 📩 SMS Button
                     Expanded(
-                      child: _buildActionButton(
-                        icon: Icons.sms,
-                        label: 'SMS',
-                        color: const Color(0xFF4CAF50),
-                        onTap: () => _sendSMS(context),
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Fluttertoast.showToast(msg: 'Print feature coming soon');
+                        },
+                        icon: const Icon(Icons.print),
+                        label: const Text('Print'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.primaryGreen,
+                          side: const BorderSide(color: AppTheme.primaryGreen),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    
-                    // 💬 WhatsApp Button
                     Expanded(
-                      child: _buildActionButton(
-                        icon: Icons.chat,
-                        label: 'WhatsApp',
-                        color: const Color(0xFF25D366),
-                        onTap: () => _sendWhatsApp(context),
+                      child: OutlinedButton.icon(
+                        onPressed: widget.customerEmail != null
+                            ? () {
+                                // TODO: Implement email functionality
+                                Fluttertoast.showToast(msg: 'Email functionality coming soon');
+                              }
+                            : null,
+                        icon: const Icon(Icons.email),
+                        label: const Text('Email'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.primaryGreen,
+                          side: const BorderSide(color: AppTheme.primaryGreen),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    
-                    // 📧 Email Button
                     Expanded(
-                      child: _buildActionButton(
-                        icon: Icons.email,
-                        label: 'Email',
-                        color: const Color(0xFF2196F3),
-                        onTap: () => _sendEmail(context),
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          // TODO: Implement share functionality
+                          Fluttertoast.showToast(msg: 'Share functionality coming soon');
+                        },
+                        icon: const Icon(Icons.share),
+                        label: const Text('Share'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.primaryGreen,
+                          side: const BorderSide(color: AppTheme.primaryGreen),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // Done Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Provider.of<CartProvider>(context, listen: false).clearCart();
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryGreen,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                // New Sale Button
+                ElevatedButton(
+                  onPressed: () {
+                    Provider.of<CartProvider>(context, listen: false).clearCart();
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryGreen,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                  child: const Text(
+                    'New Sale',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
-          ],
-        ),
       ),
     );
   }
@@ -521,5 +332,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
         ],
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

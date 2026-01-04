@@ -5,11 +5,13 @@ import '../models/stock_movement_model.dart';
 import '../models/product_model.dart';
 import 'database_service.dart';
 import 'product_service.dart';
+import 'sales_service.dart';
 
 /// Service for inventory/stock management operations
 class InventoryService {
   final DatabaseService _dbService = DatabaseService();
   final ProductService _productService = ProductService();
+  final SalesService _salesService = SalesService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Get all stock movements
@@ -191,8 +193,8 @@ class InventoryService {
     final totalValue = totalValueResult.first['total'];
     final stockValue = totalValue != null ? (totalValue as num).toDouble() : 0.0;
     
-    // Today's sales (placeholder - would need orders integration)
-    final todaysSales = 0.0; // TODO: Implement when orders are integrated
+    // Today's sales - Get actual data from sales service
+    final todaysSales = await _salesService.getTodaysSalesTotal();
     
     return {
       'totalProducts': totalProducts,
