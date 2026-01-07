@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_sms/flutter_sms.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../../config/theme.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/sales_provider.dart';
@@ -112,6 +110,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
   }
 
   // 📩 SEND SMS
+  // 📩 SEND SMS
   Future<void> _sendSMS(BuildContext context) async {
     final phone = _customer?.phone ?? '';
     if (phone.isEmpty) {
@@ -119,30 +118,16 @@ class _ReceiptScreenState extends State<ReceiptScreen> with SingleTickerProvider
       return;
     }
 
-    // Request permission
-    final permission = await Permission.sms.request();
-    if (!permission.isGranted) {
-      _showError(context, 'SMS permission denied');
-      return;
-    }
-
     try {
       final message = _generateReceiptMessage();
-      await sendSMS(
-        message: message,
-        recipients: [phone],
-        sendDirect: true,
-      );
-      
-      _showSuccess(context, 'SMS sent successfully!');
-    } catch (e) {
-      // Fallback to SMS app if direct send fails
-      final uri = Uri.parse('sms:$phone?body=${Uri.encodeComponent(_generateReceiptMessage())}');
+      final uri = Uri.parse('sms:$phone?body=${Uri. encodeComponent(message)}');
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        _showError(context, 'Could not send SMS');
+        _showError(context, 'Could not open SMS app');
       }
+    } catch (e) {
+      _showError(context, 'Could not send SMS');
     }
   }
 

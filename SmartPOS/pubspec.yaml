@@ -59,11 +59,6 @@ dependencies:
   # URL launcher for SMS/WhatsApp/Email
   url_launcher: ^6.2.1
 
-  # SMS sending
-  flutter_sms: ^2.3.3
-
-  # Permission handling
-  permission_handler: ^11.1.0
 
 dev_dependencies:
   flutter_test:
