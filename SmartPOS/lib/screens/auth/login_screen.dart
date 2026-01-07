@@ -29,7 +29,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _checkRememberMe();
+    // Check remember me after the widget is fully built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkRememberMe();
+    });
   }
   
   Future<void> _checkRememberMe() async {
@@ -40,11 +43,18 @@ class _LoginScreenState extends State<LoginScreen> {
     if (isRemembered && userId != null && mounted) {
       // Auto login - go to home
       // Download data from cloud first
-      await FirestoreSyncService().downloadAllFromCloud();
-      // Start auto-sync
-      FirestoreSyncService().startAutoSync();
+      try {
+        await FirestoreSyncService().downloadAllFromCloud();
+        // Start auto-sync
+        FirestoreSyncService().startAutoSync();
+      } catch (e) {
+        // Continue even if sync fails
+        print('Auto-sync error: $e');
+      }
       // Navigate to home
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
     }
   }
 

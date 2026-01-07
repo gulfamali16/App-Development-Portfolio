@@ -331,7 +331,10 @@ class DatabaseService {
           value TEXT
         )
       ''');
-      
+    }
+    
+    // Add ledger table if upgrading from version < 5
+    if (oldVersion < 5) {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS ledger (
           id TEXT PRIMARY KEY,
