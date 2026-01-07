@@ -181,6 +181,22 @@ class DatabaseService {
         value TEXT
       )
     ''');
+
+    // Ledger table for customer account tracking
+    await db.execute('''
+      CREATE TABLE ledger (
+        id TEXT PRIMARY KEY,
+        customerId TEXT NOT NULL,
+        type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        description TEXT NOT NULL,
+        balanceBefore REAL NOT NULL,
+        balanceAfter REAL NOT NULL,
+        saleId TEXT,
+        createdAt TEXT,
+        FOREIGN KEY (customerId) REFERENCES customers(id)
+      )
+    ''');
   }
 
   /// Upgrade database
@@ -315,6 +331,21 @@ class DatabaseService {
           value TEXT
         )
       ''');
+      
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS ledger (
+          id TEXT PRIMARY KEY,
+          customerId TEXT NOT NULL,
+          type TEXT NOT NULL,
+          amount REAL NOT NULL,
+          description TEXT NOT NULL,
+          balanceBefore REAL NOT NULL,
+          balanceAfter REAL NOT NULL,
+          saleId TEXT,
+          createdAt TEXT,
+          FOREIGN KEY (customerId) REFERENCES customers(id)
+        )
+      ''');
     }
   }
 
@@ -339,6 +370,7 @@ class DatabaseService {
     await db.delete('sync_queue');
     await db.delete('notifications');
     await db.delete('settings');
+    await db.delete('ledger');
   }
 
   /// Insert or update user
