@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/theme.dart';
 import '../../config/routes.dart';
 import '../../services/settings_service.dart';
@@ -233,8 +234,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (confirmed == true && mounted) {
       try {
+        // Clear Remember Me preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('remember_me');
+        await prefs.remove('user_id');
+        await prefs.remove('login_method');
+        
+        // Sign out from Firebase and Google
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         await authProvider.signOut();
+        await _googleSignIn.signOut();
         
         if (mounted) {
           Navigator.pushReplacementNamed(context, AppRoutes.login);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/routes.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
@@ -8,6 +9,7 @@ import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 import '../../utils/validators.dart';
 import '../../utils/constants.dart';
+import '../../services/firestore_sync_service.dart';
 
 /// Login screen with email and password authentication
 class LoginScreen extends StatefulWidget {
@@ -22,6 +24,39 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _rememberMe = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    // Check remember me after the widget is fully built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkRememberMe();
+    });
+  }
+  
+  Future<void> _checkRememberMe() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isRemembered = prefs.getBool('remember_me') ?? false;
+    final userId = prefs.getString('user_id');
+    
+    if (isRemembered && userId != null && mounted) {
+      // Auto login - go to home
+      // Download data from cloud first
+      try {
+        await FirestoreSyncService().downloadAllFromCloud();
+        // Start auto-sync
+        FirestoreSyncService().startAutoSync();
+      } catch (e) {
+        // Continue even if sync fails
+        print('Auto-sync error: $e');
+      }
+      // Navigate to home
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -43,6 +78,19 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (success && mounted) {
+      // Save remember me preference if enabled
+      if (_rememberMe) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('remember_me', true);
+        await prefs.setString('user_id', authProvider.currentUser?.uid ?? '');
+        await prefs.setString('login_method', 'email');
+      }
+      
+      // Download data from cloud
+      await FirestoreSyncService().downloadAllFromCloud();
+      // Start auto-sync
+      FirestoreSyncService().startAutoSync();
+      
       Fluttertoast.showToast(
         msg: AppConstants.loginSuccess,
         toastLength: Toast.LENGTH_SHORT,
@@ -69,6 +117,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await authProvider.signInWithGoogle();
 
     if (success && mounted) {
+      // Google Sign-In = Always remember
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('remember_me', true);
+      await prefs.setString('user_id', authProvider.currentUser?.uid ?? '');
+      await prefs.setString('login_method', 'google');
+      
+      // Download data from cloud
+      await FirestoreSyncService().downloadAllFromCloud();
+      // Start auto-sync
+      FirestoreSyncService().startAutoSync();
+      
       Fluttertoast.showToast(
         msg: AppConstants.loginSuccess,
         toastLength: Toast.LENGTH_SHORT,
@@ -215,6 +274,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       validator: Validators.validatePassword,
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _handleLogin(),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // Remember Me checkbox
+                    CheckboxListTile(
+                      title: const Text(
+                        'Remember Me',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      value: _rememberMe,
+                      onChanged: (value) => setState(() => _rememberMe = value ?? false),
+                      activeColor: AppTheme.primaryGreen,
+                      checkColor: Colors.black,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 8),
                     

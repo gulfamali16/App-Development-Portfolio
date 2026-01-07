@@ -2,11 +2,13 @@ import 'package:sqflite/sqflite.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/product_model.dart';
 import 'database_service.dart';
+import 'firestore_sync_service.dart';
 
 /// Service for product CRUD operations
 class ProductService {
   final DatabaseService _dbService = DatabaseService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreSyncService _syncService = FirestoreSyncService();
 
   /// Get all products from local database
   Future<List<ProductModel>> getAllProducts() async {
@@ -87,8 +89,8 @@ class ProductService {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
-      // Add to sync queue for Firebase
-      await _dbService.addToSyncQueue('insert', 'products', product.toJson());
+      // Sync to Firestore (if online)
+      await _syncService.syncProduct(product);
 
       return true;
     } catch (e) {
@@ -108,8 +110,8 @@ class ProductService {
         whereArgs: [product.id],
       );
 
-      // Add to sync queue for Firebase
-      await _dbService.addToSyncQueue('update', 'products', product.toJson());
+      // Sync to Firestore (if online)
+      await _syncService.syncProduct(product);
 
       return true;
     } catch (e) {
@@ -128,8 +130,8 @@ class ProductService {
         whereArgs: [id],
       );
 
-      // Add to sync queue for Firebase
-      await _dbService.addToSyncQueue('delete', 'products', {'id': id});
+      // Delete from Firestore (if online)
+      await _syncService.deleteProductFromCloud(id);
 
       return true;
     } catch (e) {

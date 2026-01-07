@@ -5,12 +5,14 @@ import '../models/cart_item_model.dart';
 import 'database_service.dart';
 import 'product_service.dart';
 import 'customer_service.dart';
+import 'firestore_sync_service.dart';
 
 /// Service for managing sales transactions
 class SalesService {
   final DatabaseService _databaseService = DatabaseService();
   final ProductService _productService = ProductService();
   final CustomerService _customerService = CustomerService();
+  final FirestoreSyncService _syncService = FirestoreSyncService();
 
   /// Create a new sale
   Future<String> createSale(SaleModel sale) async {
@@ -49,6 +51,9 @@ class SalesService {
         await _customerService.updateLastPurchase(sale.customerId!);
       }
 
+      // Sync to Firestore (if online)
+      await _syncService.syncSale(sale);
+
       return sale.id;
     } catch (e) {
       throw Exception('Failed to create sale: $e');
@@ -56,7 +61,7 @@ class SalesService {
   }
 
   /// Get all sales
-  Future<List<SaleModel>> getSales() async {
+  Future<List<SaleModel>> getAllSales() async {
     try {
       final db = await _databaseService.database;
       final List<Map<String, dynamic>> maps = await db.query(
@@ -67,6 +72,11 @@ class SalesService {
     } catch (e) {
       throw Exception('Failed to load sales: $e');
     }
+  }
+
+  /// Get all sales (alias for compatibility)
+  Future<List<SaleModel>> getSales() async {
+    return getAllSales();
   }
 
   /// Get sale by ID
