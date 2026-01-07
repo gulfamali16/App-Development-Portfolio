@@ -1,13 +1,15 @@
 import 'package:sqflite/sqflite.dart';
 import '../models/customer_model.dart';
 import 'database_service.dart';
+import 'firestore_sync_service.dart';
 
 /// Service for managing customers
 class CustomerService {
   final DatabaseService _databaseService = DatabaseService();
+  final FirestoreSyncService _syncService = FirestoreSyncService();
 
   /// Get all customers
-  Future<List<CustomerModel>> getCustomers() async {
+  Future<List<CustomerModel>> getAllCustomers() async {
     try {
       final db = await _databaseService.database;
       final List<Map<String, dynamic>> maps = await db.query(
@@ -18,6 +20,11 @@ class CustomerService {
     } catch (e) {
       throw Exception('Failed to load customers: $e');
     }
+  }
+
+  /// Get all customers (alias for compatibility)
+  Future<List<CustomerModel>> getCustomers() async {
+    return getAllCustomers();
   }
 
   /// Get customer by ID
@@ -127,6 +134,9 @@ class CustomerService {
         customer.toJson(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
+      
+      // Sync to Firestore (if online)
+      await _syncService.syncCustomer(customer);
     } catch (e) {
       throw Exception('Failed to add customer: $e');
     }
@@ -142,6 +152,9 @@ class CustomerService {
         where: 'id = ?',
         whereArgs: [customer.id],
       );
+      
+      // Sync to Firestore (if online)
+      await _syncService.syncCustomer(customer);
     } catch (e) {
       throw Exception('Failed to update customer: $e');
     }
@@ -187,6 +200,9 @@ class CustomerService {
         where: 'id = ?',
         whereArgs: [id],
       );
+      
+      // Delete from Firestore (if online)
+      await _syncService.deleteCustomerFromCloud(id);
     } catch (e) {
       throw Exception('Failed to delete customer: $e');
     }

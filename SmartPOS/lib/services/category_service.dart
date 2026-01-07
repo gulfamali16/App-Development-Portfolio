@@ -2,11 +2,13 @@ import 'package:sqflite/sqflite.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/category_model.dart';
 import 'database_service.dart';
+import 'firestore_sync_service.dart';
 
 /// Service for category CRUD operations
 class CategoryService {
   final DatabaseService _dbService = DatabaseService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreSyncService _syncService = FirestoreSyncService();
 
   /// Get all categories from local database
   Future<List<CategoryModel>> getAllCategories() async {
@@ -91,8 +93,8 @@ class CategoryService {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
-      // Add to sync queue for Firebase
-      await _dbService.addToSyncQueue('insert', 'categories', category.toJson());
+      // Sync to Firestore (if online)
+      await _syncService.syncCategory(category);
 
       return true;
     } catch (e) {
@@ -112,8 +114,8 @@ class CategoryService {
         whereArgs: [category.id],
       );
 
-      // Add to sync queue for Firebase
-      await _dbService.addToSyncQueue('update', 'categories', category.toJson());
+      // Sync to Firestore (if online)
+      await _syncService.syncCategory(category);
 
       return true;
     } catch (e) {
@@ -145,8 +147,8 @@ class CategoryService {
         whereArgs: [id],
       );
 
-      // Add to sync queue for Firebase
-      await _dbService.addToSyncQueue('delete', 'categories', {'id': id});
+      // Delete from Firestore (if online)
+      await _syncService.deleteCategoryFromCloud(id);
 
       return true;
     } catch (e) {
