@@ -28,35 +28,13 @@ void main() async {
     // Continue app execution even if Firebase fails (for development without Firebase config)
   }
   
-  // Check remember me preference
-  final prefs = await SharedPreferences.getInstance();
-  final isRemembered = prefs.getBool('remember_me') ?? false;
-  final userId = prefs.getString('user_id');
-  
-  String initialRoute = AppRoutes.splash;
-  
-  if (isRemembered && userId != null) {
-    initialRoute = AppRoutes.home;
-    
-    // Start auto-sync when app opens with remembered login
-    FirestoreSyncService().startAutoSync();
-    
-    // Download latest data from cloud
-    try {
-      await FirestoreSyncService().downloadAllFromCloud();
-    } catch (e) {
-      debugPrint('Error downloading data from cloud: $e');
-    }
-  }
-  
-  runApp(MyApp(initialRoute: initialRoute));
+  // Always start with splash screen - it will check user state
+  runApp(const MyApp());
 }
 
 /// Root widget of the application
 class MyApp extends StatelessWidget {
-  final String initialRoute;
-  
-  const MyApp({super.key, this.initialRoute = AppRoutes.splash});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +52,8 @@ class MyApp extends StatelessWidget {
         title: AppConstants.appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        initialRoute: initialRoute,
+        // Always start with splash screen
+        initialRoute: AppRoutes.splash,
         onGenerateRoute: AppRoutes.generateRoute,
       ),
     );

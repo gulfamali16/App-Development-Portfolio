@@ -214,7 +214,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   'Add Product',
                   Icons.add_box,
                   Colors.white,
-                  () => Navigator.pushNamed(context, AppRoutes.addProduct),
+                  () async {
+                    // Wait for result and refresh if product was added
+                    final result = await Navigator.pushNamed(context, AppRoutes.addProduct);
+                    if (result == true) {
+                      // Refresh product list
+                      _loadData();
+                    }
+                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -626,7 +633,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
             const SizedBox(height: 8),
             TextButton(
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.addProduct),
+              onPressed: () async {
+                // Wait for result and refresh if product was added
+                final result = await Navigator.pushNamed(context, AppRoutes.addProduct);
+                if (result == true) {
+                  // Refresh product list
+                  _loadData();
+                }
+              },
               child: const Text(
                 'Add your first product',
                 style: TextStyle(color: AppTheme.primaryGreen),
