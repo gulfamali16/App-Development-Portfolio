@@ -293,12 +293,4 @@ class SalesService {
     }
   }
 
-  /// Get all sales (for exports)
-  Future<List<SaleModel>> getAllSales() async {
-    try {
-      return await getSales();
-    } catch (e) {
-      throw Exception('Failed to load all sales: $e');
-    }
-  }
 }

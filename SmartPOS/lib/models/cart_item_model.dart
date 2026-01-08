@@ -18,6 +18,9 @@ class CartItemModel {
 
   /// Calculate line total (custom price * quantity)
   double get lineTotal => customPrice * quantity;
+  /// Alias getters for Firestore sync compatibility
+  double get price => customPrice;
+  double get total => lineTotal;
 
   /// Create CartItemModel from JSON/Map
   factory CartItemModel.fromJson(Map<String, dynamic> json) {

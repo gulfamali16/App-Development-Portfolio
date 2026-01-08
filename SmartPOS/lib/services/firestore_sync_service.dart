@@ -417,6 +417,7 @@ class FirestoreSyncService {
     }
   }
 
+
   /// Listen for connectivity changes and auto-sync
   void startAutoSync() {
     Connectivity().onConnectivityChanged.listen((result) async {
