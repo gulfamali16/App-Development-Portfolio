@@ -325,7 +325,7 @@ class SalesService {
                 'id': sale['id'],
                 'customerId': sale['customerId'],
                 'customerName': sale['customerName'],
-                'items': items.toString(),
+                'items': jsonEncode(items), // Properly encode as JSON
                 'subtotal': sale['subtotal'],
                 'discount': sale['discount'] ?? 0.0,
                 'tax': sale['tax'] ?? 0.0,

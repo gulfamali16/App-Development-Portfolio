@@ -119,7 +119,9 @@ class ReportService {
     try {
       final reportData = await exportReportToCSV(start, end);
       
-      final subject = Uri.encodeComponent('Sales Report - ${start.toString().substring(0, 10)}');
+      // Format dates properly
+      final startDate = '${start.year}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
+      final subject = Uri.encodeComponent('Sales Report - $startDate');
       final body = Uri.encodeComponent(reportData);
       
       final emailUri = Uri.parse('mailto:$email?subject=$subject&body=$body');
