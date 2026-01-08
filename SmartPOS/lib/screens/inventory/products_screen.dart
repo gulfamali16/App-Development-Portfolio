@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -582,20 +581,25 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Widget _buildProductImage(String? imageUrl) {
     if (imageUrl != null && imageUrl.isNotEmpty) {
-      // Check if it's a local file path or network URL
-      if (imageUrl.startsWith('/') || imageUrl.startsWith('file://')) {
-        return Image.file(
-          File(imageUrl),
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
-        );
-      } else {
-        return Image.network(
-          imageUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
-        );
-      }
+      // Display network image with proper loading and error handling
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+              color: AppTheme.primaryGreen,
+              strokeWidth: 2,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder(),
+      );
     }
     return _buildImagePlaceholder();
   }
