@@ -26,6 +26,11 @@ class AuthService {
       final UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Login timeout - Please check your internet connection and try again');
+        },
       );
 
       final User? user = result.user;
@@ -36,13 +41,24 @@ class AuthService {
       // Update last login time
       await _firestore.collection(AppConstants.usersCollection).doc(user.uid).update({
         'lastLoginAt': DateTime.now().toIso8601String(),
-      });
+      }).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          // Continue even if update fails
+        },
+      );
 
       // Get user data from Firestore
       final userData = await _firestore
           .collection(AppConstants.usersCollection)
           .doc(user.uid)
-          .get();
+          .get()
+          .timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Failed to retrieve user data - Please try again');
+        },
+      );
 
       return UserModel.fromJson(userData.data()!);
     } on FirebaseAuthException catch (e) {
@@ -62,6 +78,11 @@ class AuthService {
       final UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Sign up timeout - Please check your internet connection and try again');
+        },
       );
 
       final User? user = result.user;
@@ -70,7 +91,12 @@ class AuthService {
       }
 
       // Update display name
-      await user.updateDisplayName(name);
+      await user.updateDisplayName(name).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          // Continue even if update fails
+        },
+      );
 
       // Create user document in Firestore
       final UserModel userModel = UserModel(
@@ -85,7 +111,13 @@ class AuthService {
       await _firestore
           .collection(AppConstants.usersCollection)
           .doc(user.uid)
-          .set(userModel.toJson());
+          .set(userModel.toJson())
+          .timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw Exception('Failed to save user data - Please try again');
+        },
+      );
 
       return userModel;
     } on FirebaseAuthException catch (e) {
@@ -98,18 +130,36 @@ class AuthService {
   /// Sign in with Google
   Future<UserModel> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn().timeout(
+        const Duration(seconds: 60),
+        onTimeout: () {
+          throw Exception('Google sign in timeout - Please try again');
+        },
+      );
+      
       if (googleUser == null) {
         throw Exception('Google sign in cancelled');
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Google authentication timeout - Please try again');
+        },
+      );
+      
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential result = await _auth.signInWithCredential(credential);
+      final UserCredential result = await _auth.signInWithCredential(credential).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Firebase authentication timeout - Please try again');
+        },
+      );
+      
       final User? user = result.user;
 
       if (user == null) {
@@ -120,7 +170,13 @@ class AuthService {
       final docSnapshot = await _firestore
           .collection(AppConstants.usersCollection)
           .doc(user.uid)
-          .get();
+          .get()
+          .timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw Exception('Failed to retrieve user data - Please try again');
+        },
+      );
 
       UserModel userModel;
       if (!docSnapshot.exists) {
@@ -136,7 +192,13 @@ class AuthService {
         await _firestore
             .collection(AppConstants.usersCollection)
             .doc(user.uid)
-            .set(userModel.toJson());
+            .set(userModel.toJson())
+            .timeout(
+          const Duration(seconds: 15),
+          onTimeout: () {
+            throw Exception('Failed to save user data - Please try again');
+          },
+        );
       } else {
         // Update last login time
         await _firestore
@@ -144,7 +206,12 @@ class AuthService {
             .doc(user.uid)
             .update({
           'lastLoginAt': DateTime.now().toIso8601String(),
-        });
+        }).timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            // Continue even if update fails
+          },
+        );
         userModel = UserModel.fromJson(docSnapshot.data()!);
       }
 
@@ -169,7 +236,12 @@ class AuthService {
   /// Reset password
   Future<void> resetPassword(String email) async {
     try {
-      await _auth.sendPasswordResetEmail(email: email);
+      await _auth.sendPasswordResetEmail(email: email).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Request timeout - Please check your internet connection and try again');
+        },
+      );
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     } catch (e) {
