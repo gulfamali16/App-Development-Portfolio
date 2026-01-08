@@ -6,6 +6,7 @@ import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/sales_service.dart';
 import '../../services/export_service.dart';
+import '../../services/report_service.dart';
 import '../../utils/format_helper.dart';
 
 /// Reports screen with KPI cards and detailed reports
@@ -19,6 +20,7 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   final SalesService _salesService = SalesService();
   final ExportService _exportService = ExportService();
+  final ReportService _reportService = ReportService();
   String _selectedPeriod = 'This Month';
   double _totalSales = 0.0;
   double _grossProfit = 0.0;
@@ -27,6 +29,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   double _profitChange = 0.0;
   double _ordersChange = 0.0;
   bool _isLoading = true;
+  DateTime _startDate = DateTime.now();
+  DateTime _endDate = DateTime.now();
 
   @override
   void initState() {
@@ -38,14 +42,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
     setState(() => _isLoading = true);
     try {
       final now = DateTime.now();
-      final startOfMonth = DateTime(now.year, now.month, 1);
+      _startDate = DateTime(now.year, now.month, 1);
+      _endDate = now;
       final startOfLastMonth = DateTime(now.year, now.month - 1, 1);
       final endOfLastMonth = DateTime(now.year, now.month, 0, 23, 59, 59);
       
       // This month's data
-      final thisMonthSales = await _salesService.getSalesTotal(startOfMonth, now);
-      final thisMonthProfit = await _salesService.getGrossProfit(startOfMonth, now);
-      final thisMonthOrders = await _salesService.getOrderCount(startOfMonth, now);
+      final thisMonthSales = await _salesService.getSalesTotal(_startDate, _endDate);
+      final thisMonthProfit = await _salesService.getGrossProfit(_startDate, _endDate);
+      final thisMonthOrders = await _salesService.getOrderCount(_startDate, _endDate);
       
       // Last month's data for comparison
       final lastMonthSales = await _salesService.getSalesTotal(startOfLastMonth, endOfLastMonth);
@@ -425,33 +430,53 @@ class _ReportsScreenState extends State<ReportsScreen> {
             Expanded(
               child: _buildActionButton(
                 icon: Icons.picture_as_pdf,
-                label: 'Export PDF',
+                label: 'Export CSV',
                 onTap: () async {
                   try {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Generating PDF...'),
-                        backgroundColor: AppTheme.primaryBlue,
-                      ),
-                    );
-                    await _exportService.exportPDF();
+                    setState(() => _isLoading = true);
+                    final csvData = await _reportService.exportReportToCSV(_startDate, _endDate);
+                    
+                    // Show CSV data in a dialog or save it
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('PDF exported successfully!'),
-                          backgroundColor: AppTheme.primaryGreen,
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: AppTheme.surfaceDark,
+                          title: const Text('CSV Export', style: TextStyle(color: Colors.white)),
+                          content: SingleChildScrollView(
+                            child: Text(
+                              csvData,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'monospace',
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Close', style: TextStyle(color: AppTheme.primaryGreen)),
+                            ),
+                          ],
                         ),
+                      );
+                      Fluttertoast.showToast(
+                        msg: 'CSV exported successfully!',
+                        backgroundColor: Colors.green,
+                        textColor: Colors.white,
                       );
                     }
                   } catch (e) {
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error: $e'),
-                          backgroundColor: AppTheme.alertRed,
-                        ),
+                      Fluttertoast.showToast(
+                        msg: 'Error: $e',
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
                       );
                     }
+                  } finally {
+                    if (mounted) setState(() => _isLoading = false);
                   }
                 },
               ),
@@ -462,31 +487,30 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 icon: Icons.email,
                 label: 'Email Report',
                 onTap: () async {
+                  // Show email input dialog
+                  final email = await _showEmailDialog();
+                  if (email == null || email.isEmpty) return;
+                  
                   try {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Preparing report...'),
-                        backgroundColor: AppTheme.primaryBlue,
-                      ),
-                    );
-                    await _exportService.emailReport();
+                    setState(() => _isLoading = true);
+                    await _reportService.emailReport(email, _startDate, _endDate);
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Report ready to share!'),
-                          backgroundColor: AppTheme.primaryGreen,
-                        ),
+                      Fluttertoast.showToast(
+                        msg: 'Report ready to email!',
+                        backgroundColor: Colors.green,
+                        textColor: Colors.white,
                       );
                     }
                   } catch (e) {
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error: $e'),
-                          backgroundColor: AppTheme.alertRed,
-                        ),
+                      Fluttertoast.showToast(
+                        msg: 'Error: $e',
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
                       );
                     }
+                  } finally {
+                    if (mounted) setState(() => _isLoading = false);
                   }
                 },
               ),
@@ -601,6 +625,42 @@ class _ReportsScreenState extends State<ReportsScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close', style: TextStyle(color: AppTheme.primaryGreen)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _showEmailDialog() async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceDark,
+        title: const Text('Email Report', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Enter email address',
+            hintStyle: TextStyle(color: AppTheme.textSecondary),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.borderDark),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.primaryGreen),
+            ),
+          ),
+          keyboardType: TextInputType.emailAddress,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Send', style: TextStyle(color: AppTheme.primaryGreen)),
           ),
         ],
       ),

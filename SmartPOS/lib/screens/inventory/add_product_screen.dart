@@ -32,6 +32,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   String _selectedUnitType = 'item';
   double? _projectedMargin;
   File? _selectedImage;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -73,39 +74,54 @@ class _AddProductScreenState extends State<AddProductScreen> {
       return;
     }
 
-    final product = ProductModel(
-      id: const Uuid().v4(),
-      name: _nameController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
-      sku: _skuController.text.trim().isEmpty ? null : _skuController.text.trim(),
-      barcode: _barcodeController.text.trim().isEmpty ? null : _barcodeController.text.trim(),
-      price: double.parse(_priceController.text),
-      costPrice: _costPriceController.text.isEmpty ? null : double.tryParse(_costPriceController.text),
-      quantity: int.parse(_quantityController.text),
-      minStock: int.parse(_minStockController.text),
-      unitType: _selectedUnitType,
-      categoryId: _selectedCategoryId,
-      imageUrl: _selectedImage?.path,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
-    final provider = Provider.of<ProductProvider>(context, listen: false);
-    final success = await provider.createProduct(product);
-
-    if (success && mounted) {
-      Fluttertoast.showToast(
-        msg: 'Product added successfully',
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
+    setState(() => _isLoading = true);
+    
+    try {
+      final product = ProductModel(
+        id: const Uuid().v4(),
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+        sku: _skuController.text.trim().isEmpty ? null : _skuController.text.trim(),
+        barcode: _barcodeController.text.trim().isEmpty ? null : _barcodeController.text.trim(),
+        price: double.parse(_priceController.text),
+        costPrice: _costPriceController.text.isEmpty ? null : double.tryParse(_costPriceController.text),
+        quantity: int.parse(_quantityController.text),
+        minStock: int.parse(_minStockController.text),
+        unitType: _selectedUnitType,
+        categoryId: _selectedCategoryId,
+        imageUrl: _selectedImage?.path,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
-      Navigator.pop(context);
-    } else if (mounted) {
-      Fluttertoast.showToast(
-        msg: 'Failed to add product',
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
+
+      final provider = Provider.of<ProductProvider>(context, listen: false);
+      final success = await provider.createProduct(product);
+
+      if (success && mounted) {
+        Fluttertoast.showToast(
+          msg: 'Product added successfully',
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+        // Navigate back to products screen with success flag
+        Navigator.pop(context, true);
+      } else if (mounted) {
+        Fluttertoast.showToast(
+          msg: 'Failed to add product',
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: 'Error: ${e.toString()}',
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -302,11 +318,20 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: _saveProduct,
+              onPressed: _isLoading ? null : _saveProduct,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('Save Product'),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Save Product'),
             ),
           ],
         ),

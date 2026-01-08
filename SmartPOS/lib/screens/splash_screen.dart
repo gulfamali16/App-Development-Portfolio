@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../config/routes.dart';
 import '../config/theme.dart';
-import '../providers/auth_provider.dart';
+import '../services/firestore_sync_service.dart';
 import '../utils/constants.dart';
 
 /// Splash screen with Velocity POS branding
@@ -48,8 +49,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     // Animate progress bar
     _animateProgress();
     
-    // Navigate after splash duration
-    _navigateAfterDelay();
+    // Check user and navigate
+    _checkUserAndNavigate();
   }
 
   void _animateProgress() {
@@ -62,18 +63,41 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     });
   }
 
-  Future<void> _navigateAfterDelay() async {
-    await Future.delayed(AppConstants.splashDuration);
+  Future<void> _checkUserAndNavigate() async {
+    // Show splash for 2 seconds
+    await Future.delayed(const Duration(seconds: 2));
     
     if (!mounted) return;
     
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    // Check if user is remembered
+    final prefs = await SharedPreferences.getInstance();
+    final isRemembered = prefs.getBool('remember_me') ?? false;
+    final userId = prefs.getString('user_id');
     
-    // Navigate based on authentication state
-    if (authProvider.isAuthenticated) {
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    // Check Firebase auth state
+    final currentUser = FirebaseAuth.instance.currentUser;
+    
+    if (isRemembered && userId != null && currentUser != null) {
+      // User is logged in and remembered
+      try {
+        // Download latest data from Firestore
+        await FirestoreSyncService().downloadAllFromCloud();
+        
+        // Start auto-sync
+        FirestoreSyncService().startAutoSync();
+      } catch (e) {
+        debugPrint('Error syncing data: $e');
+      }
+      
+      // Navigate to Home (and NEVER come back to splash)
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
     } else {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+      // New user or not remembered - go to login
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
+      }
     }
   }
 
