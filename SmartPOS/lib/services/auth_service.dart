@@ -44,7 +44,8 @@ class AuthService {
       }).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          // Continue even if update fails
+          // Non-critical operation, continue even if it fails
+          print('Warning: Last login time update timed out for user ${user.uid}');
         },
       );
 
@@ -94,7 +95,8 @@ class AuthService {
       await user.updateDisplayName(name).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          // Continue even if update fails
+          // Non-critical operation, continue even if it fails
+          print('Warning: Display name update timed out for user ${user.uid}');
         },
       );
 
@@ -209,7 +211,8 @@ class AuthService {
         }).timeout(
           const Duration(seconds: 10),
           onTimeout: () {
-            // Continue even if update fails
+            // Non-critical operation, continue even if it fails
+            print('Warning: Last login time update timed out for Google sign-in user ${user.uid}');
           },
         );
         userModel = UserModel.fromJson(docSnapshot.data()!);
