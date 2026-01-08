@@ -99,7 +99,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
         backgroundColor: Colors.green,
         textColor: Colors.white,
       );
-      Navigator.pop(context);
+      // Navigate back to products screen with success flag
+      Navigator.pop(context, true);
     } else if (mounted) {
       Fluttertoast.showToast(
         msg: 'Failed to add product',

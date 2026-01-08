@@ -11,10 +11,12 @@ class AuthProvider with ChangeNotifier {
 
   UserModel? _user;
   bool _isLoading = false;
+  bool _isInitialized = false;
   String? _errorMessage;
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
+  bool get isInitialized => _isInitialized;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _user != null;
 
@@ -40,6 +42,9 @@ class AuthProvider with ChangeNotifier {
       } else {
         _user = null;
       }
+      
+      // Mark as initialized
+      _isInitialized = true;
       notifyListeners();
     });
   }

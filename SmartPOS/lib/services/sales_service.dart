@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/sale_model.dart';
 import '../models/cart_item_model.dart';
@@ -232,9 +233,19 @@ class SalesService {
         whereArgs: [startDate.toIso8601String(), endDate.toIso8601String()],
         orderBy: 'createdAt DESC',
       );
-      return maps.map((map) => _saleFromMap(map)).toList();
+      
+      // Safely parse with null checks - filter out any null results
+      return maps.map((map) {
+        try {
+          return _saleFromMap(map);
+        } catch (e) {
+          debugPrint('Error parsing sale: $e');
+          return null;
+        }
+      }).whereType<SaleModel>().toList(); // Filter out nulls
     } catch (e) {
-      throw Exception('Failed to load sales in range: $e');
+      debugPrint('Error getting sales in range: $e');
+      return [];
     }
   }
 
@@ -278,27 +289,81 @@ class SalesService {
     }
   }
 
-  /// Get recent sales with limit
+  /// Get recent sales with limit (with offline support)
   Future<List<SaleModel>> getRecentSales({int limit = 10}) async {
     try {
+      // First get from local SQLite
       final db = await _databaseService.database;
       final List<Map<String, dynamic>> maps = await db.query(
         'sales',
         orderBy: 'createdAt DESC',
         limit: limit,
       );
-      return maps.map((map) => _saleFromMap(map)).toList();
+      final localSales = maps.map((map) => _saleFromMap(map)).toList();
+      
+      // If online, also fetch from Firestore and merge
+      if (await _syncService.isOnline()) {
+        try {
+          final cloudSales = await _syncService.fetchSalesFromCloud();
+          
+          // Convert cloud sales to SaleModel
+          final cloudSaleModels = <SaleModel>[];
+          for (final sale in cloudSales) {
+            try {
+              // Parse items from cloud format
+              final items = (sale['items'] as List?)?.map((item) {
+                return {
+                  'productId': item['productId'],
+                  'productName': item['productName'],
+                  'quantity': item['quantity'],
+                  'price': item['unitPrice'],
+                  'total': item['lineTotal'],
+                };
+              }).toList() ?? [];
+              
+              final saleMap = {
+                'id': sale['id'],
+                'customerId': sale['customerId'],
+                'customerName': sale['customerName'],
+                'items': items.toString(),
+                'subtotal': sale['subtotal'],
+                'discount': sale['discount'] ?? 0.0,
+                'tax': sale['tax'] ?? 0.0,
+                'taxRate': sale['taxRate'] ?? 8.0,
+                'total': sale['total'],
+                'paymentMethod': sale['paymentMethod'],
+                'paymentStatus': sale['paymentStatus'],
+                'createdAt': sale['createdAt'],
+              };
+              cloudSaleModels.add(_saleFromMap(saleMap));
+            } catch (e) {
+              debugPrint('Error parsing cloud sale: $e');
+            }
+          }
+          
+          // Merge and deduplicate by sale ID
+          final mergedMap = <String, SaleModel>{};
+          for (final sale in [...localSales, ...cloudSaleModels]) {
+            mergedMap[sale.id] = sale;
+          }
+          
+          // Sort by date and limit
+          final merged = mergedMap.values.toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return merged.take(limit).toList();
+        } catch (e) {
+          debugPrint('Error fetching from cloud: $e');
+        }
+      }
+      
+      return localSales;
     } catch (e) {
       throw Exception('Failed to load recent sales: $e');
     }
   }
 
-  /// Get all sales (for exports)
+  /// Get all sales (alias for compatibility)
   Future<List<SaleModel>> getAllSales() async {
-    try {
-      return await getSales();
-    } catch (e) {
-      throw Exception('Failed to load all sales: $e');
-    }
+    return getSales();
   }
 }

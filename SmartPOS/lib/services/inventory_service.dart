@@ -193,11 +193,16 @@ class InventoryService {
     final totalValue = totalValueResult.first['total'];
     final stockValue = totalValue != null ? (totalValue as num).toDouble() : 0.0;
     
+    // Total sales count
+    final totalSalesResult = await db.rawQuery('SELECT COUNT(*) as count FROM sales');
+    final totalSales = Sqflite.firstIntValue(totalSalesResult) ?? 0;
+    
     // Today's sales - Get actual data from sales service
     final todaysSales = await _salesService.getTodaysSalesTotal();
     
     return {
       'totalProducts': totalProducts,
+      'totalSales': totalSales,
       'lowStockCount': lowStockCount,
       'totalStockValue': stockValue,
       'todaysSales': todaysSales,
