@@ -100,6 +100,14 @@ class Validators {
         return 'Strong';
     }
   }
+
+  /// Check if a string is a valid image URL
+  static bool isValidImageUrl(String? url) {
+    if (url == null || url.isEmpty) {
+      return false;
+    }
+    return url.startsWith('http://') || url.startsWith('https://');
+  }
 }
 
 /// Password strength enum

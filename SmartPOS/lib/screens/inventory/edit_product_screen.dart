@@ -7,6 +7,7 @@ import '../../models/product_model.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../models/category_model.dart';
+import '../../utils/validators.dart';
 
 /// Edit Product Screen - Update existing product
 class EditProductScreen extends StatefulWidget {
@@ -604,8 +605,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   Widget _buildImageUrlSection() {
     final imageUrl = _imageUrlController.text.trim();
-    final hasValidUrl = imageUrl.isNotEmpty && 
-                        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+    final hasValidUrl = Validators.isValidImageUrl(imageUrl);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

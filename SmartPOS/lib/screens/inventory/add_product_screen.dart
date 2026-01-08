@@ -6,6 +6,7 @@ import '../../config/theme.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../models/product_model.dart';
+import '../../utils/validators.dart';
 
 /// Add Product screen
 class AddProductScreen extends StatefulWidget {
@@ -395,8 +396,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   Widget _buildImageUrlSection() {
     final imageUrl = _imageUrlController.text.trim();
-    final hasValidUrl = imageUrl.isNotEmpty && 
-                        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+    final hasValidUrl = Validators.isValidImageUrl(imageUrl);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

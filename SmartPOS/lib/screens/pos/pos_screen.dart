@@ -303,7 +303,7 @@ class _POSScreenState extends State<POSScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                    child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                    child: (product.imageUrl?.isNotEmpty == true)
                         ? Image.network(
                             product.imageUrl!,
                             fit: BoxFit.cover,
