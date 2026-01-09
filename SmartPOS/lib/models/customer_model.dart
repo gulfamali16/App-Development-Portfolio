@@ -10,6 +10,7 @@ class CustomerModel {
   final String? dateOfBirth;
   final String? photoUrl;
   final double balance; // Negative = they owe us, Positive = we owe them
+  final bool isActive; // Active/Inactive status
   final DateTime? lastPurchaseAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -25,6 +26,7 @@ class CustomerModel {
     this.dateOfBirth,
     this.photoUrl,
     this.balance = 0.0,
+    this.isActive = true, // Default active
     this.lastPurchaseAt,
     this.createdAt,
     this.updatedAt,
@@ -36,8 +38,8 @@ class CustomerModel {
   /// Check if customer has prepaid/credit balance
   bool get hasCredit => balance > 0;
 
-  /// Check if customer is active (made purchase in last 30 days)
-  bool get isActive =>
+  /// Check if customer recently made a purchase (in last 30 days)
+  bool get hasRecentPurchase =>
       lastPurchaseAt != null &&
       DateTime.now().difference(lastPurchaseAt!).inDays <= 30;
 
@@ -63,6 +65,7 @@ class CustomerModel {
       dateOfBirth: json['dateOfBirth'] as String?,
       photoUrl: json['photoUrl'] as String?,
       balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
+      isActive: json['isActive'] == 1 || json['isActive'] == true, // SQLite boolean or direct bool
       lastPurchaseAt: json['lastPurchaseAt'] != null
           ? DateTime.parse(json['lastPurchaseAt'] as String)
           : null,
@@ -88,6 +91,7 @@ class CustomerModel {
       'dateOfBirth': dateOfBirth,
       'photoUrl': photoUrl,
       'balance': balance,
+      'isActive': isActive ? 1 : 0, // SQLite boolean
       'lastPurchaseAt': lastPurchaseAt?.toIso8601String(),
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
@@ -106,6 +110,7 @@ class CustomerModel {
     String? dateOfBirth,
     String? photoUrl,
     double? balance,
+    bool? isActive,
     DateTime? lastPurchaseAt,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -121,6 +126,7 @@ class CustomerModel {
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       photoUrl: photoUrl ?? this.photoUrl,
       balance: balance ?? this.balance,
+      isActive: isActive ?? this.isActive,
       lastPurchaseAt: lastPurchaseAt ?? this.lastPurchaseAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

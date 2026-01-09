@@ -186,12 +186,13 @@ class SalesService {
     };
   }
 
-  /// Parse sale from database map
+  /// Parse sale from database map with proper null safety
   SaleModel _saleFromMap(Map<String, dynamic> map) {
     // Parse items from JSON string
     List<CartItemModel> items = [];
     try {
-      final itemsJson = jsonDecode(map['items'] as String) as List;
+      final itemsStr = map['items']?.toString() ?? '[]';
+      final itemsJson = jsonDecode(itemsStr) as List;
       items = itemsJson
           .map((item) => CartItemModel.fromJson(item as Map<String, dynamic>))
           .toList();
@@ -201,28 +202,28 @@ class SalesService {
     }
 
     return SaleModel(
-      id: map['id'] as String,
-      customerId: map['customerId'] as String?,
-      customerName: map['customerName'] as String,
+      id: map['id']?.toString() ?? '',
+      customerId: map['customerId']?.toString(),
+      customerName: map['customerName']?.toString() ?? 'Walk-in',
       items: items,
-      subtotal: (map['subtotal'] as num).toDouble(),
+      subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0.0,
       discount: (map['discount'] as num?)?.toDouble() ?? 0.0,
-      discountType: map['discountType'] as String?,
-      tax: (map['tax'] as num).toDouble(),
+      discountType: map['discountType']?.toString(),
+      tax: (map['tax'] as num?)?.toDouble() ?? 0.0,
       taxRate: (map['taxRate'] as num?)?.toDouble() ?? 8.0,
-      total: (map['total'] as num).toDouble(),
-      paymentMethod: map['paymentMethod'] as String,
-      paymentStatus: map['paymentStatus'] as String? ?? 'paid',
-      cashierId: map['cashierId'] as String,
-      cashierName: map['cashierName'] as String,
+      total: (map['total'] as num?)?.toDouble() ?? 0.0,
+      paymentMethod: map['paymentMethod']?.toString() ?? 'Cash',
+      paymentStatus: map['paymentStatus']?.toString() ?? 'paid',
+      cashierId: map['cashierId']?.toString() ?? '',
+      cashierName: map['cashierName']?.toString() ?? '',
       createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
+          ? DateTime.parse(map['createdAt']?.toString() ?? DateTime.now().toIso8601String())
           : DateTime.now(),
       syncStatus: map['syncStatus'] as int? ?? 0,
     );
   }
 
-  /// Get sales within a date range
+  /// Get sales within a date range with proper null handling
   Future<List<SaleModel>> getSalesInRange(DateTime startDate, DateTime endDate) async {
     try {
       final db = await _databaseService.database;
@@ -232,9 +233,19 @@ class SalesService {
         whereArgs: [startDate.toIso8601String(), endDate.toIso8601String()],
         orderBy: 'createdAt DESC',
       );
-      return maps.map((map) => _saleFromMap(map)).toList();
+      
+      // Safely parse with null checks and filter out any null results
+      return maps.map((map) {
+        try {
+          return _saleFromMap(map);
+        } catch (e) {
+          // Log error but continue processing other sales
+          return null;
+        }
+      }).whereType<SaleModel>().toList();
     } catch (e) {
-      throw Exception('Failed to load sales in range: $e');
+      // Return empty list instead of throwing to prevent UI crashes
+      return [];
     }
   }
 

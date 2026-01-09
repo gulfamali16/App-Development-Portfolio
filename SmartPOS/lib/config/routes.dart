@@ -21,6 +21,8 @@ import '../screens/settings/settings_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/pos/pos_screen.dart';
 import '../screens/reports/reports_screen.dart';
+import '../screens/bulk_import/bulk_import_products_screen.dart';
+import '../screens/bulk_import/bulk_import_customers_screen.dart';
 import '../models/product_model.dart';
 
 /// App routes configuration
@@ -47,6 +49,8 @@ class AppRoutes {
   static const String salesHistory = '/sales-history';
   static const String pos = '/pos';
   static const String reports = '/reports';
+  static const String bulkImportProducts = '/bulk-import-products';
+  static const String bulkImportCustomers = '/bulk-import-customers';
 
   // Route generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -105,6 +109,10 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const POSScreen());
       case reports:
         return MaterialPageRoute(builder: (_) => const ReportsScreen());
+      case bulkImportProducts:
+        return MaterialPageRoute(builder: (_) => const BulkImportProductsScreen());
+      case bulkImportCustomers:
+        return MaterialPageRoute(builder: (_) => const BulkImportCustomersScreen());
       default:
         return _errorRoute('No route defined for ${settings.name}');
     }

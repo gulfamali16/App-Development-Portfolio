@@ -6,42 +6,26 @@ import '../models/product_model.dart';
 class CartProvider with ChangeNotifier {
   final List<CartItemModel> _items = [];
   double _discount = 0.0;
-  String _discountType = 'fixed'; // 'fixed' or 'percentage'
-  double _taxRate = 8.0;
+  // Tax removed as per requirements
 
   // Getters
   List<CartItemModel> get items => _items;
   int get itemCount => _items.length;
   double get discount => _discount;
-  String get discountType => _discountType;
-  double get taxRate => _taxRate;
 
   /// Calculate subtotal (sum of all line totals)
   double get subtotal {
     return _items.fold(0.0, (sum, item) => sum + item.lineTotal);
   }
 
-  /// Calculate discount amount
+  /// Calculate discount amount (always fixed money amount)
   double get discountAmount {
-    if (_discountType == 'percentage') {
-      return subtotal * (_discount / 100);
-    }
     return _discount;
   }
 
-  /// Calculate subtotal after discount
-  double get subtotalAfterDiscount {
-    return subtotal - discountAmount;
-  }
-
-  /// Calculate tax amount
-  double get taxAmount {
-    return subtotalAfterDiscount * (_taxRate / 100);
-  }
-
-  /// Calculate total amount
+  /// Calculate total (subtotal - discount, no tax)
   double get total {
-    return subtotalAfterDiscount + taxAmount;
+    return subtotal - discountAmount;
   }
 
   /// Check if cart is empty
@@ -129,23 +113,15 @@ class CartProvider with ChangeNotifier {
     }
   }
 
-  /// Set discount
-  void setDiscount(double amount, String type) {
+  /// Set discount (fixed money amount only)
+  void setDiscount(double amount) {
     _discount = amount;
-    _discountType = type;
     notifyListeners();
   }
 
   /// Remove discount
   void removeDiscount() {
     _discount = 0.0;
-    _discountType = 'fixed';
-    notifyListeners();
-  }
-
-  /// Set tax rate
-  void setTaxRate(double rate) {
-    _taxRate = rate;
     notifyListeners();
   }
 
@@ -153,7 +129,6 @@ class CartProvider with ChangeNotifier {
   void clearCart() {
     _items.clear();
     _discount = 0.0;
-    _discountType = 'fixed';
     notifyListeners();
   }
 
@@ -163,9 +138,6 @@ class CartProvider with ChangeNotifier {
       'itemCount': itemCount,
       'subtotal': subtotal,
       'discount': discountAmount,
-      'discountType': discountType,
-      'tax': taxAmount,
-      'taxRate': taxRate,
       'total': total,
     };
   }

@@ -348,19 +348,19 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                 children: [
                   Expanded(
                     child:  _buildActionButton(
-                      'Add Product',
-                      Icons.add_shopping_cart,
+                      'Bulk Import Products',
+                      Icons.upload_file,
                       AppTheme.surfaceDark,
-                      onTap: () => Navigator.pushNamed(context, AppRoutes. addProduct),
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.bulkImportProducts),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child:  _buildActionButton(
-                      'Stock In',
-                      Icons.add_box,
+                      'Bulk Import Customers',
+                      Icons.group_add,
                       AppTheme.surfaceDark,
-                      onTap:  () => Navigator.pushNamed(context, AppRoutes.stockIn),
+                      onTap:  () => Navigator.pushNamed(context, AppRoutes.bulkImportCustomers),
                     ),
                   ),
                 ],

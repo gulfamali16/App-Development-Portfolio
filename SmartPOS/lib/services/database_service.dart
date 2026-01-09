@@ -107,6 +107,7 @@ class DatabaseService {
         dateOfBirth TEXT,
         photoUrl TEXT,
         balance REAL DEFAULT 0,
+        isActive INTEGER DEFAULT 1,
         lastPurchaseAt TEXT,
         createdAt TEXT,
         updatedAt TEXT,
@@ -282,6 +283,7 @@ class DatabaseService {
           dateOfBirth TEXT,
           photoUrl TEXT,
           balance REAL DEFAULT 0,
+          isActive INTEGER DEFAULT 1,
           lastPurchaseAt TEXT,
           createdAt TEXT,
           updatedAt TEXT,
@@ -349,6 +351,15 @@ class DatabaseService {
           FOREIGN KEY (customerId) REFERENCES customers(id)
         )
       ''');
+    }
+    
+    // Add isActive column to customers if upgrading from version < 6
+    if (oldVersion < 6) {
+      try {
+        await db.execute('ALTER TABLE customers ADD COLUMN isActive INTEGER DEFAULT 1');
+      } catch (e) {
+        // Column might already exist
+      }
     }
   }
 

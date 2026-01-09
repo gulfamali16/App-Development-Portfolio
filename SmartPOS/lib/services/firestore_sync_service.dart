@@ -93,6 +93,7 @@ class FirestoreSyncService {
       'email': customer.email,
       'address': customer.address,
       'balance': customer.balance,
+      'isActive': customer.isActive, // Sync active status
       'totalPurchases': 0.0, // Calculate from sales if needed
       'createdAt': customer.createdAt?.toIso8601String(),
       'updatedAt': DateTime.now().toIso8601String(),
