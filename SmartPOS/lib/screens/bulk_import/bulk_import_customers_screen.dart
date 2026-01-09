@@ -122,8 +122,8 @@ class _BulkImportCustomersScreenState extends State<BulkImportCustomersScreen> {
                 createdAt: DateTime.now(),
                 updatedAt: DateTime.now(),
               );
-              
-              await _customerService.createCustomer(customer);
+
+              await CustomerService().addCustomer(customer);
               _importedCount++;
             } catch (e) {
               debugPrint('Error importing row $i: $e');
