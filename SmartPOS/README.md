@@ -233,7 +233,29 @@ flutter test
 
 ## Screenshots
 
-*Screenshots will be added in future commits*
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/8df924d1-d537-4d08-9ff8-90bc2681a9d1" width="240" />
+  <img src="https://github.com/user-attachments/assets/563a788e-9077-4ef5-b8aa-bfa7a7871cf3" width="240" />
+  <img src="https://github.com/user-attachments/assets/8696286e-965f-45fc-a462-b0e08e1f4762" width="240" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/a693e938-fd5f-46ac-99c4-af9eac385f7c" width="240" />
+  <img src="https://github.com/user-attachments/assets/c61c36a5-e6e6-4967-8fe4-a085688f9331" width="240" />
+  <img src="https://github.com/user-attachments/assets/0af676d4-e552-41a0-b0d9-a9e7b94ccc7e" width="240" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/30263be4-7c62-4b50-b9cf-9b500618bfec" width="240" />
+  <img src="https://github.com/user-attachments/assets/9feb4b22-e44e-48e7-b758-8ab48e24c4c5" width="240" />
+  <img src="https://github.com/user-attachments/assets/5d823c55-3d41-4274-aafb-d40f2d897061" width="240" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/416f69e7-b071-43a5-bb77-336c52c5db72" width="240" />
+</p>
+
+
 
 ## Team/Author Information
 
