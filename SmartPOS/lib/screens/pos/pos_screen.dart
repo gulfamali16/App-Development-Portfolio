@@ -794,7 +794,7 @@ class _POSScreenState extends State<POSScreen> {
           ),
           const SizedBox(height: 8),
           
-          // Discount
+          // Discount (Money only)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -814,22 +814,6 @@ class _POSScreenState extends State<POSScreen> {
                   '-\$${cartProvider.discountAmount.toStringAsFixed(2)}',
                   style: const TextStyle(color: AppTheme.alertRed, fontSize: 14),
                 ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          
-          // Tax
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Tax (${cartProvider.taxRate.toStringAsFixed(0)}%)',
-                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-              ),
-              Text(
-                '\$${cartProvider.taxAmount.toStringAsFixed(2)}',
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-              ),
             ],
           ),
           const Divider(color: AppTheme.borderDark, height: 24),
@@ -904,86 +888,52 @@ class _POSScreenState extends State<POSScreen> {
 
   void _showDiscountDialog(CartProvider cartProvider) {
     final TextEditingController discountController = TextEditingController();
-    String discountType = 'fixed';
     
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          backgroundColor: AppTheme.surfaceDark,
-          title: const Text('Add Discount', style: TextStyle(color: Colors.white)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: discountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  prefixText: discountType == 'fixed' ? '\$ ' : '',
-                  suffixText: discountType == 'percentage' ? ' %' : '',
-                  hintText: 'Enter discount amount',
-                  hintStyle: const TextStyle(color: AppTheme.textSecondary),
-                ),
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceDark,
+        title: const Text('Add Discount (Rs)', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: discountController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                prefixText: 'Rs ',
+                prefixStyle: TextStyle(color: AppTheme.primaryGreen),
+                hintText: 'Enter discount amount',
+                hintStyle: TextStyle(color: AppTheme.textSecondary),
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('Fixed', style: TextStyle(color: Colors.white)),
-                      value: 'fixed',
-                      groupValue: discountType,
-                      onChanged: (value) {
-                        setState(() {
-                          discountType = value!;
-                        });
-                      },
-                      activeColor: AppTheme.primaryGreen,
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('%', style: TextStyle(color: Colors.white)),
-                      value: 'percentage',
-                      groupValue: discountType,
-                      onChanged: (value) {
-                        setState(() {
-                          discountType = value!;
-                        });
-                      },
-                      activeColor: AppTheme.primaryGreen,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            if (cartProvider.discount > 0)
-              TextButton(
-                onPressed: () {
-                  cartProvider.removeDiscount();
-                  Navigator.pop(context);
-                },
-                child: const Text('Remove', style: TextStyle(color: AppTheme.alertRed)),
-              ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
-            ),
-            TextButton(
-              onPressed: () {
-                final discount = double.tryParse(discountController.text);
-                if (discount != null && discount > 0) {
-                  cartProvider.setDiscount(discount, discountType);
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Apply', style: TextStyle(color: AppTheme.primaryGreen)),
             ),
           ],
         ),
+        actions: [
+          if (cartProvider.discount > 0)
+            TextButton(
+              onPressed: () {
+                cartProvider.removeDiscount();
+                Navigator.pop(context);
+              },
+              child: const Text('Remove', style: TextStyle(color: AppTheme.alertRed)),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () {
+              final discount = double.tryParse(discountController.text);
+              if (discount != null && discount > 0) {
+                cartProvider.setDiscount(discount);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Apply', style: TextStyle(color: AppTheme.primaryGreen)),
+          ),
+        ],
       ),
     );
   }
