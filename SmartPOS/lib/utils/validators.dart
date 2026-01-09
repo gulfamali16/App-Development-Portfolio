@@ -100,6 +100,38 @@ class Validators {
         return 'Strong';
     }
   }
+
+  /// Check if a string is a valid image URL
+  static bool isValidImageUrl(String? url) {
+    if (url == null || url.isEmpty) {
+      return false;
+    }
+    
+    // Basic protocol check
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return false;
+    }
+    
+    // Try parsing as URI for better validation
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasAbsolutePath) {
+      return false;
+    }
+    
+    return true;
+  }
+  
+  /// Check if URL appears to be an image based on extension
+  static bool hasImageExtension(String url) {
+    final lowerUrl = url.toLowerCase();
+    return lowerUrl.endsWith('.jpg') ||
+           lowerUrl.endsWith('.jpeg') ||
+           lowerUrl.endsWith('.png') ||
+           lowerUrl.endsWith('.gif') ||
+           lowerUrl.endsWith('.webp') ||
+           lowerUrl.endsWith('.bmp') ||
+           lowerUrl.endsWith('.svg');
+  }
 }
 
 /// Password strength enum

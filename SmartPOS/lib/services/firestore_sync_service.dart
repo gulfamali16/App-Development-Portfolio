@@ -38,7 +38,7 @@ class FirestoreSyncService {
 
   // ==================== PRODUCTS ====================
   
-  /// Sync product to Firestore (excluding imageUrl)
+  /// Sync product to Firestore (including imageUrl)
   Future<void> syncProduct(ProductModel product) async {
     if (_userId == null || !await isOnline()) return;
     
@@ -54,10 +54,10 @@ class FirestoreSyncService {
       'quantity': product.quantity,
       'minStockLevel': product.minStock,
       'unit': product.unitType,
+      'imageUrl': product.imageUrl,
       'isActive': true,
       'createdAt': product.createdAt?.toIso8601String(),
       'updatedAt': DateTime.now().toIso8601String(),
-      // NOTE: imageUrl is NOT included - skip images
     };
     
     await _userCollection('products').doc(product.id).set(data, SetOptions(merge: true));

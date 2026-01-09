@@ -1,8 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Network permissions for API calls -->
+    <!-- Essential permissions -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.SEND_SMS"/>
 
     <application
         android:label="VelocityPOS"
@@ -31,27 +31,16 @@
             android:value="2"/>
     </application>
 
-    <!-- Queries for url_launcher to work properly on Android 11+ -->
+    <!-- Queries for SMS and WhatsApp sharing -->
     <queries>
-        <!-- For SMS intents -->
         <intent>
             <action android:name="android.intent.action.SENDTO"/>
             <data android:scheme="smsto"/>
         </intent>
-
-        <!-- For web links (WhatsApp web links) -->
         <intent>
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="https"/>
         </intent>
-
-        <!-- For email intents -->
-        <intent>
-            <action android:name="android.intent.action.SENDTO"/>
-            <data android:scheme="mailto"/>
-        </intent>
-
-        <!-- Explicit WhatsApp package query -->
         <package android:name="com.whatsapp"/>
     </queries>
 </manifest>

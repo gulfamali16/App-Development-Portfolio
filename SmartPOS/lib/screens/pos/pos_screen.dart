@@ -301,14 +301,45 @@ class _POSScreenState extends State<POSScreen> {
                     color: AppTheme.backgroundDark,
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   ),
-                  child: Center(
-                    child: Icon(
-                      Icons.inventory_2,
-                      size: 48,
-                      color: isOutOfStock 
-                          ? AppTheme.textSecondary.withOpacity(0.3)
-                          : AppTheme.primaryGreen.withOpacity(0.5),
-                    ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    child: (product.imageUrl?.isNotEmpty == true)
+                        ? Image.network(
+                            product.imageUrl!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  color: AppTheme.primaryGreen,
+                                  strokeWidth: 2,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) => Center(
+                              child: Icon(
+                                Icons.inventory_2,
+                                size: 48,
+                                color: isOutOfStock 
+                                    ? AppTheme.textSecondary.withOpacity(0.3)
+                                    : AppTheme.primaryGreen.withOpacity(0.5),
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: Icon(
+                              Icons.inventory_2,
+                              size: 48,
+                              color: isOutOfStock 
+                                  ? AppTheme.textSecondary.withOpacity(0.3)
+                                  : AppTheme.primaryGreen.withOpacity(0.5),
+                            ),
+                          ),
                   ),
                 ),
               ),

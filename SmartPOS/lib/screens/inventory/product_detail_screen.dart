@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'dart:io';
 import '../../config/theme.dart';
 import '../../config/routes.dart';
 import '../../models/product_model.dart';
@@ -141,41 +140,47 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
     }
     
-    // Check if local file or network URL
-    if (imageUrl.startsWith('/') || imageUrl.startsWith('file://')) {
-      final path = imageUrl.replaceFirst('file://', '');
-      final file = File(path);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: 250,
-        );
-      }
-      // File doesn't exist, show fallback
-      return Center(
-        child: Icon(
-          Icons.broken_image,
-          color: Colors.grey,
-          size: 64,
-        ),
-      );
-    } else {
-      return Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: 250,
-        errorBuilder: (_, __, ___) => Center(
-          child: Icon(
-            Icons.broken_image,
-            color: Colors.grey,
-            size: 64,
+    // Display network image with proper error handling
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: 250,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center(
+          child: CircularProgressIndicator(
+            value: loadingProgress.expectedTotalBytes != null
+                ? loadingProgress.cumulativeBytesLoaded /
+                    loadingProgress.expectedTotalBytes!
+                : null,
+            color: AppTheme.primaryGreen,
           ),
-        ),
-      );
-    }
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.broken_image,
+                color: AppTheme.textSecondary,
+                size: 64,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Failed to load image',
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildProductInfo() {
