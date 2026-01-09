@@ -295,9 +295,9 @@ class PaymentOptionsScreen extends StatelessWidget {
         items: cartProvider.items,
         subtotal: cartProvider.subtotal,
         discount: cartProvider.discountAmount,
-        discountType: cartProvider.discountType,
-        tax: cartProvider.taxAmount,
-        taxRate: cartProvider.taxRate,
+        discountType: 'fixed', // Always fixed now
+        tax: 0.0, // No tax as per requirements
+        taxRate: 0.0, // No tax as per requirements
         total: cartProvider.total,
         paymentMethod: paymentMethod,
         paymentStatus: paymentMethod == 'credit' ? 'pending' : 'paid',
