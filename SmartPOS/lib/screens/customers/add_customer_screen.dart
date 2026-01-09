@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../config/theme.dart';
 import '../../providers/customer_provider.dart';
 import '../../models/customer_model.dart';
@@ -27,7 +25,6 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
   DateTime? _dateOfBirth;
   bool _isSaving = false;
   String _countryCode = '+1';
-  File? _selectedImage;
 
   @override
   void dispose() {
@@ -84,46 +81,15 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     }
   }
 
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
+  String _getNameInitials() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return '?';
     
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surfaceDark,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: AppTheme.primaryGreen),
-              title: const Text('Take Photo', style: TextStyle(color: Colors.white)),
-              onTap: () async {
-                Navigator.pop(context);
-                final XFile? image = await picker.pickImage(source: ImageSource.camera);
-                if (image != null) {
-                  setState(() => _selectedImage = File(image.path));
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: AppTheme.primaryGreen),
-              title: const Text('Choose from Gallery', style: TextStyle(color: Colors.white)),
-              onTap: () async {
-                Navigator.pop(context);
-                final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                if (image != null) {
-                  setState(() => _selectedImage = File(image.path));
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+    final parts = name.split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name[0].toUpperCase();
   }
 
   @override
@@ -143,41 +109,18 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Photo upload
+            // Customer Avatar with Name Initials
             Center(
-              child: GestureDetector(
-                onTap: _pickImage,
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: AppTheme.surfaceDark,
-                      backgroundImage: _selectedImage != null ? FileImage(_selectedImage!) : null,
-                      child: _selectedImage == null
-                          ? Icon(
-                              Icons.person,
-                              size: 50,
-                              color: AppTheme.textSecondary.withOpacity(0.5),
-                            )
-                          : null,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: AppTheme.primaryGreen,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.black,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
+              child: CircleAvatar(
+                radius: 50,
+                backgroundColor: AppTheme.primaryGreen,
+                child: Text(
+                  _getNameInitials(),
+                  style: const TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ),
@@ -192,6 +135,10 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                 labelStyle: TextStyle(color: AppTheme.textSecondary),
                 prefixIcon: Icon(Icons.person, color: AppTheme.textSecondary),
               ),
+              onChanged: (value) {
+                // Update avatar as name is typed
+                setState(() {});
+              },
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Please enter customer name';

@@ -1,10 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Essential permissions -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.SEND_SMS"/>
-    <uses-permission android:name="android.permission.READ_SMS"/>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
 
     <application
         android:label="VelocityPOS"
@@ -33,11 +31,8 @@
             android:value="2"/>
     </application>
 
+    <!-- Queries for SMS and WhatsApp sharing -->
     <queries>
-        <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
-        </intent>
         <intent>
             <action android:name="android.intent.action.SENDTO"/>
             <data android:scheme="smsto"/>
