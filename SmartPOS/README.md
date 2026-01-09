@@ -843,7 +843,7 @@ VelocityPOS is a complete, modern, offline-first POS system perfect for:
 
 ---
 
-## 📝 App Screenshota
+## 📝 App Screenshots
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/8df924d1-d537-4d08-9ff8-90bc2681a9d1" width="240" />
@@ -863,9 +863,6 @@ VelocityPOS is a complete, modern, offline-first POS system perfect for:
   <img src="https://github.com/user-attachments/assets/5d823c55-3d41-4274-aafb-d40f2d897061" width="240" />
 </p>
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/416f69e7-b071-43a5-bb77-336c52c5db72" width="240" />
-</p>
 
 ---
 
