@@ -1,2 +1,0 @@
-D:/FA23-BSE-030-Gulfam-Ali/MidTerm/android/app/.cxx/release/3v3d4j18/arm64-v8a/CMakeFiles/edit_cache.dir
-D:/FA23-BSE-030-Gulfam-Ali/MidTerm/android/app/.cxx/release/3v3d4j18/arm64-v8a/CMakeFiles/rebuild_cache.dir
