@@ -1,18 +1,31 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/home_screen.dart';
 
-void main() {
+Future<void> main() async {
   // Ensure native bindings are initialized before calling native code (sqflite, path_provider, etc.)
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Lock orientation to portrait for stability
-  SystemChrome.setPreferredOrientations([
+
+  // Catch Flutter framework errors and prevent silent crashes
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+  };
+
+  // Lock orientation to portrait for stability (must be awaited)
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
-  runApp(const MyApp());
+
+  // Wrap runApp with runZonedGuarded to catch unhandled async errors
+  runZonedGuarded(
+    () => runApp(const MyApp()),
+    (Object error, StackTrace stack) {
+      debugPrint('Unhandled error: $error');
+      debugPrint('Stack: $stack');
+    },
+  );
 }
 
 class MyApp extends StatelessWidget {
