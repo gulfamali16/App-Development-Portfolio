@@ -1,0 +1,37 @@
+name: video_downloader_app
+description: A Flutter video downloader app for YouTube and Instagram
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management & Storage
+  shared_preferences: ^2.2.2
+  sqflite: ^2.3.0
+  path_provider: ^2.1.1
+
+  # Video Downloading
+  youtube_explode_dart: ^2.0.2
+  dio: ^5.4.0
+  permission_handler: ^11.1.0
+
+  # UI
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+
+  # Utilities
+  url_launcher: ^6.2.2
+  intl: ^0.18.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
