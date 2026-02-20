@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import '../models/download_item.dart';
 import '../services/database_service.dart';
 import '../services/video_downloader_service.dart';
@@ -517,51 +516,74 @@ class _DownloadScreenState extends State<DownloadScreen> {
     });
 
     final selectedStream = streams[selectedQualityIndex];
-    final fileName =
-        '${widget.videoInfo['title']}_${DateTime.now().millisecondsSinceEpoch}';
+    final title = (widget.videoInfo['title'] as String? ?? 'video')
+        .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+    final fileName = '${title}_${DateTime.now().millisecondsSinceEpoch}';
 
     DateTime lastUpdate = DateTime.now();
     int lastBytes = 0;
 
-    final filePath = await _downloaderService.downloadVideo(
-      url: selectedStream['url'],
-      fileName: fileName,
-      onProgress: (received, total) {
-        final now = DateTime.now();
-        final timeDiff = now.difference(lastUpdate).inMilliseconds;
+    void onProgress(int received, int total) {
+      final now = DateTime.now();
+      final timeDiff = now.difference(lastUpdate).inMilliseconds;
 
-        if (timeDiff > 500) {
-          // Update every 500ms
-          final bytesDiff = received - lastBytes;
-          final speed = (bytesDiff / timeDiff) * 1000; // bytes per second
+      if (timeDiff > 500) {
+        final bytesDiff = received - lastBytes;
+        final speed = (bytesDiff / timeDiff) * 1000; // bytes per second
 
-          setState(() {
-            downloadProgress = received / total;
-            downloadedBytes = received;
-            totalBytes = total;
-            downloadSpeed = '${(speed / 1024 / 1024).toStringAsFixed(1)} MB/s';
-          });
+        setState(() {
+          downloadProgress = total > 0 ? received / total : 0;
+          downloadedBytes = received;
+          totalBytes = total;
+          downloadSpeed = '${(speed / 1024 / 1024).toStringAsFixed(1)} MB/s';
+        });
 
-          lastUpdate = now;
-          lastBytes = received;
-        }
-      },
-    );
+        lastUpdate = now;
+        lastBytes = received;
+      }
+    }
+
+    String? filePath;
+
+    if (widget.platform == 'YouTube') {
+      // Use youtube_explode_dart stream client for reliable YouTube downloads.
+      // itag -1 (or 0) means not found — downloadYouTubeStream falls back to highest bitrate.
+      final itag = (selectedStream['itag'] as int?) ?? -1;
+      if (itag < 0) {
+        debugPrint('Warning: itag missing for selected stream; will use highest bitrate fallback');
+      }
+      filePath = await _downloaderService.downloadYouTubeStream(
+        videoUrl: widget.url,
+        itag: itag,
+        fileName: fileName,
+        onProgress: onProgress,
+      );
+    } else {
+      filePath = await _downloaderService.downloadVideo(
+        url: selectedStream['url'] as String,
+        fileName: fileName,
+        onProgress: onProgress,
+      );
+    }
 
     if (filePath != null) {
       // Save to database
       final downloadItem = DownloadItem(
-        title: widget.videoInfo['title'],
+        title: widget.videoInfo['title'] as String? ?? 'Video',
         url: widget.url,
         platform: widget.platform,
-        thumbnail: widget.videoInfo['thumbnail'],
-        fileSize: _formatFileSize(selectedStream['size']),
+        thumbnail: widget.videoInfo['thumbnail'] as String? ?? '',
+        fileSize: _formatFileSize((selectedStream['size'] as int?) ?? 0),
         filePath: filePath,
         downloadDate: DateTime.now(),
         isCompleted: true,
       );
 
-      await DatabaseService.instance.insertDownload(downloadItem);
+      try {
+        await DatabaseService.instance.insertDownload(downloadItem);
+      } catch (e) {
+        debugPrint('Error saving download record: $e');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
