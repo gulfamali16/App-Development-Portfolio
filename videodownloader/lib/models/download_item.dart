@@ -22,8 +22,7 @@ class DownloadItem {
   });
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'title': title,
       'url': url,
       'platform': platform,
@@ -33,6 +32,10 @@ class DownloadItem {
       'downloadDate': downloadDate.millisecondsSinceEpoch,
       'isCompleted': isCompleted ? 1 : 0,
     };
+    if (id != null) {
+      map['id'] = id;
+    }
+    return map;
   }
 
   factory DownloadItem.fromMap(Map<String, dynamic> map) {

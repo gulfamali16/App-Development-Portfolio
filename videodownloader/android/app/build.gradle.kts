@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.videodownloader.app"
-    compileSdk = 36
+    compileSdk = 35
 
 
     compileOptions {
@@ -24,6 +24,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
+        multiDexEnabled = true
     }
 
     buildTypes {

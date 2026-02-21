@@ -103,7 +103,7 @@ class _DownloadScreenState extends State<DownloadScreen> {
   }
 
   Widget _buildVideoPreview() {
-    final duration = widget.videoInfo['duration'] ?? 0;
+    final duration = (widget.videoInfo['duration'] as int?) ?? 0;
     final minutes = duration ~/ 60;
     final seconds = duration % 60;
 
@@ -199,7 +199,7 @@ class _DownloadScreenState extends State<DownloadScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${widget.videoInfo['author'] ?? 'Unknown'} • ${_formatViews(widget.videoInfo['views'])} views',
+                    '${widget.videoInfo['author'] ?? 'Unknown'} • ${_formatViews(widget.videoInfo['views'] as int?)} views',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade400,
@@ -310,7 +310,7 @@ class _DownloadScreenState extends State<DownloadScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '~${_formatFileSize(stream['size'])}${index == 1 ? ' • Recommended' : ''}',
+                    '~${_formatFileSize((stream['size'] as int?) ?? 0)}${index == 1 ? ' • Recommended' : ''}',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade400,
