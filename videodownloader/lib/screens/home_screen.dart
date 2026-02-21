@@ -29,13 +29,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _initializeDatabase() async {
     try {
       await DatabaseService.instance.database;
+      if (!mounted) return;
       setState(() {
         _databaseInitialized = true;
       });
       _loadRecentDownloads();
     } catch (e) {
-      print('Database initialization error: $e');
-      // Continue without database
+      debugPrint('Database initialization error: $e');
+      if (!mounted) return;
       setState(() {
         _databaseInitialized = false;
       });
@@ -47,11 +48,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final downloads = await DatabaseService.instance.getRecentDownloads(limit: 2);
+      if (!mounted) return;
       setState(() {
         recentDownloads = downloads;
       });
     } catch (e) {
-      print('Error loading downloads: $e');
+      debugPrint('Error loading downloads: $e');
     }
   }
 
