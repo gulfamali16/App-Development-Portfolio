@@ -24,11 +24,8 @@ dependencies:
   google_fonts: ^6.1.0
   flutter_svg: ^2.0.9
 
-  # Instagram Download
-  flutter_insta: ^1.0.1
-
-  # Open files with default app
-  open_file: ^3.5.1
+  # Open files with default app (plays videos in phone's default player)
+  open_filex: ^4.5.0
 
   # Utilities
   url_launcher: ^6.2.2
