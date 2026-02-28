@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:open_file/open_file.dart';
 import '../models/download_item.dart';
 import '../services/database_service.dart';
 import '../services/video_downloader_service.dart';
@@ -474,57 +476,75 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDownloadItem(DownloadItem item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1e1e1e),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.05),
+    final isYouTube = item.platform == 'YouTube';
+    final platformIcon = isYouTube ? Icons.play_circle : Icons.camera_alt;
+    final platformColor = isYouTube ? const Color(0xFFf20d0d) : const Color(0xFF833AB4);
+
+    return InkWell(
+      onTap: () async {
+        if (item.filePath != null && File(item.filePath!).existsSync()) {
+          try {
+            await OpenFile.open(item.filePath!);
+          } catch (e) {
+            _showSnackBar('Could not open file. No compatible app found.');
+          }
+        } else {
+          _showSnackBar('File not found. It may have been deleted.');
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1e1e1e),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.05),
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 64,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFF121212),
-              borderRadius: BorderRadius.circular(8),
+        child: Row(
+          children: [
+            Container(
+              width: 64,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFF121212),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(platformIcon, color: platformColor),
             ),
-            child: const Icon(Icons.video_library, color: Colors.grey),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${item.platform} • ${item.fileSize}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade400,
+                  const SizedBox(height: 4),
+                  Text(
+                    '${item.platform} • ${item.fileSize}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade400,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Icon(
-            item.isCompleted ? Icons.check_circle : Icons.download,
-            color: item.isCompleted ? Colors.green : Colors.grey.shade600,
-          ),
-        ],
+            Icon(
+              item.isCompleted ? Icons.check_circle : Icons.download,
+              color: item.isCompleted ? Colors.green : Colors.grey.shade600,
+            ),
+          ],
+        ),
       ),
     );
   }

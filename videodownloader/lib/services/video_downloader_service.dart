@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_insta/flutter_insta.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -164,26 +165,54 @@ class VideoDownloaderService {
     return getApplicationDocumentsDirectory();
   }
 
-  // Parse Instagram URL (simplified — real implementation would need Instagram API)
+  // Get Instagram Reel video info using flutter_insta
   Future<Map<String, dynamic>?> getInstagramVideoInfo(String url) async {
-    // Note: Instagram requires authentication and proper API access
-    // This is a placeholder for the structure
-    return {
-      'title': 'Instagram Video',
-      'author': 'Instagram User',
-      'duration': 0,
-      'thumbnail': 'https://via.placeholder.com/320x180',
-      'views': 0,
-      'videoUrl': url,
-      'streams': [
-        {
-          'quality': '720p',
-          'size': 8500000,
-          'itag': -1,
-          'url': url,
+    try {
+      final flutterInsta = FlutterInsta();
+      try {
+        await flutterInsta.downloadReels(url);
+      } catch (e) {
+        debugPrint('Instagram: downloadReels failed: $e');
+        return null;
+      }
+      final directUrl = flutterInsta.reelsDownloadUrl;
+
+      if (directUrl == null || directUrl.isEmpty) {
+        debugPrint('Instagram: downloadReels returned null/empty URL');
+        return null;
+      }
+
+      int contentLength = 0;
+      try {
+        final response = await _dio.head(directUrl);
+        final lengthHeader = response.headers.value('content-length');
+        if (lengthHeader != null) {
+          contentLength = int.tryParse(lengthHeader) ?? 0;
         }
-      ],
-    };
+      } catch (e) {
+        debugPrint('Instagram: could not get content-length: $e');
+      }
+
+      return {
+        'title': 'Instagram Reel',
+        'author': 'Instagram',
+        'duration': 0,
+        'thumbnail': '',
+        'views': 0,
+        'videoUrl': url,
+        'streams': [
+          {
+            'quality': '720p (with audio)',
+            'size': contentLength,
+            'itag': -1,
+            'url': directUrl,
+          }
+        ],
+      };
+    } catch (e) {
+      debugPrint('Error getting Instagram video info: $e');
+      return null;
+    }
   }
 
   void dispose() {
