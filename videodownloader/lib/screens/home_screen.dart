@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:open_file/open_file.dart';
+import 'package:open_filex/open_filex.dart';
 import '../models/download_item.dart';
 import '../services/database_service.dart';
 import '../services/video_downloader_service.dart';
@@ -484,7 +484,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () async {
         if (item.filePath != null && File(item.filePath!).existsSync()) {
           try {
-            await OpenFile.open(item.filePath!);
+            await OpenFilex.open(item.filePath!);
           } catch (e) {
             _showSnackBar('Could not open file. No compatible app found.');
           }
