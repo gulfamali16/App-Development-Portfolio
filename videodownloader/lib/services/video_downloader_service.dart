@@ -7,7 +7,12 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class VideoDownloaderService {
-  final YoutubeExplode _yt = YoutubeExplode();
+  YoutubeExplode? _ytInstance;
+  bool _disposed = false;
+  YoutubeExplode get _yt {
+    if (_disposed) throw StateError('VideoDownloaderService has been disposed');
+    return _ytInstance ??= YoutubeExplode();
+  }
   final Dio _dio = Dio();
 
   // Request storage permission — handles Android 13+ (READ_MEDIA_VIDEO) and older (WRITE_EXTERNAL_STORAGE)
@@ -636,6 +641,8 @@ class VideoDownloaderService {
   }
 
   void dispose() {
-    _yt.close();
+    _disposed = true;
+    _ytInstance?.close();
+    _ytInstance = null;
   }
 }

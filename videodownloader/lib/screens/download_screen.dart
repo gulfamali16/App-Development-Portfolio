@@ -510,12 +510,26 @@ class _DownloadScreenState extends State<DownloadScreen> {
   }
 
   Future<void> _startDownload() async {
+    if (streams.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No downloadable streams found for this video.'),
+          backgroundColor: Color(0xFFf20d0d),
+        ),
+      );
+      return;
+    }
+
+    // Clamp defensively: selectedQualityIndex is set by user taps (0..streams.length-1)
+    // but guard against any edge case where the list size differs at download time.
+    final clampedIndex = selectedQualityIndex.clamp(0, streams.length - 1);
+
     setState(() {
       isDownloading = true;
       downloadProgress = 0.0;
     });
 
-    final selectedStream = streams[selectedQualityIndex];
+    final selectedStream = streams[clampedIndex];
     final title = (widget.videoInfo['title'] as String? ?? 'video')
         .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
     final fileName = '${title}_${DateTime.now().millisecondsSinceEpoch}';

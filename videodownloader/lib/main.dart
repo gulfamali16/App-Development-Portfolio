@@ -12,6 +12,41 @@ Future<void> main() async {
     FlutterError.presentError(details);
   };
 
+  // Show an in-app error screen instead of crashing on widget build errors
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: const Color(0xFF121212),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: Color(0xFFf20d0d), size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'Something went wrong',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                details.exceptionAsString(),
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                textAlign: TextAlign.center,
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  };
+
   // Lock orientation to portrait for stability (must be awaited)
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

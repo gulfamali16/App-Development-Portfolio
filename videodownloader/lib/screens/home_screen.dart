@@ -347,7 +347,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: _urlController,
                       style: const TextStyle(fontSize: 16),
                       decoration: InputDecoration(
-                        hintText: 'https://www.youtube.com/watch?v=...',
+                        hintText: selectedPlatform == 'YouTube'
+                                ? 'https://www.youtube.com/watch?v=...'
+                                : 'https://www.instagram.com/reel/...',
                         hintStyle: TextStyle(
                           color: Colors.grey.shade600,
                         ),
