@@ -18,7 +18,7 @@ import '../screens/payments/outstanding_balances_screen.dart';
 import '../screens/payments/ledger_adjustment_screen.dart';
 import '../screens/sales/sales_history_screen.dart';
 import '../screens/settings/settings_screen.dart';
-import '../screens/notifications/notifications_screen.dart';
+// Notifications screen removed
 import '../screens/pos/pos_screen.dart';
 import '../screens/reports/reports_screen.dart';
 import '../screens/bulk_import/bulk_import_products_screen.dart';
@@ -42,7 +42,7 @@ class AppRoutes {
   static const String stockIn = '/stock-in';
   static const String stockOut = '/stock-out';
   static const String settings = '/settings';
-  static const String notifications = '/notifications';
+  // Notifications removed
   static const String addCustomer = '/add-customer';
   static const String outstandingBalances = '/outstanding-balances';
   static const String ledgerAdjustment = '/ledger-adjustment';
@@ -91,8 +91,7 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const CategoriesScreen());
       case '/settings':
         return MaterialPageRoute(builder: (_) => const SettingsScreen());
-      case notifications:
-        return MaterialPageRoute(builder: (_) => const NotificationsScreen());
+      // Notifications route removed
       case addCustomer:
         return MaterialPageRoute(builder: (_) => const AddCustomerScreen());
       case outstandingBalances:

@@ -4,7 +4,9 @@ import '../../config/theme.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sales_provider.dart';
+import '../../providers/currency_provider.dart';
 import '../../models/customer_model.dart';
+import '../../utils/format_helper.dart';
 import 'receipt_screen.dart';
 
 /// Payment options screen
@@ -43,10 +45,10 @@ class PaymentOptionsScreen extends StatelessWidget {
               
               // Previous Balance (if exists)
               if (customer != null && customer!.balance != 0)
-                _buildPreviousBalance(),
+                _buildPreviousBalance(context),
               
               // Total to Pay
-              _buildTotalSection(cartProvider),
+              _buildTotalSection(context, cartProvider),
               
               const SizedBox(height: 32),
               
@@ -114,7 +116,7 @@ class PaymentOptionsScreen extends StatelessWidget {
                         foregroundColor: isWalkIn ? AppTheme.textSecondary : AppTheme.primaryGreen,
                         side: BorderSide(
                           color: isWalkIn 
-                              ? AppTheme.textSecondary.withOpacity(0.3) 
+                              ? AppTheme.textSecondary.withValues(alpha: 0.3) 
                               : AppTheme.primaryGreen,
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -143,7 +145,7 @@ class PaymentOptionsScreen extends StatelessWidget {
               Icon(
                 Icons.storefront,
                 size: 80,
-                color: AppTheme.primaryGreen.withOpacity(0.7),
+                color: AppTheme.primaryGreen.withValues(alpha: 0.7),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -161,7 +163,7 @@ class PaymentOptionsScreen extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 40,
-                backgroundColor: AppTheme.primaryGreen.withOpacity(0.2),
+                backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.2),
                 child: Text(
                   customer!.initials,
                   style: const TextStyle(
@@ -194,7 +196,7 @@ class PaymentOptionsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPreviousBalance() {
+  Widget _buildPreviousBalance(BuildContext context) {
     if (customer == null || customer!.balance == 0) return const SizedBox.shrink();
 
     return Container(
@@ -202,13 +204,13 @@ class PaymentOptionsScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: customer!.isDebtor 
-            ? AppTheme.alertRed.withOpacity(0.1)
-            : AppTheme.primaryBlue.withOpacity(0.1),
+            ? AppTheme.alertRed.withValues(alpha: 0.1)
+            : AppTheme.primaryBlue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: customer!.isDebtor 
-              ? AppTheme.alertRed.withOpacity(0.3)
-              : AppTheme.primaryBlue.withOpacity(0.3),
+              ? AppTheme.alertRed.withValues(alpha: 0.3)
+              : AppTheme.primaryBlue.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -222,7 +224,7 @@ class PaymentOptionsScreen extends StatelessWidget {
             ),
           ),
           Text(
-            '${customer!.isDebtor ? "-" : "+"}\$${customer!.balance.abs().toStringAsFixed(2)}',
+            '${customer!.isDebtor ? "-" : "+"}${FormatHelper.formatPrice(customer!.balance.abs(), symbol: Provider.of<CurrencyProvider>(context, listen: false).currencySymbol)}',
             style: TextStyle(
               color: customer!.isDebtor ? AppTheme.alertRed : AppTheme.primaryBlue,
               fontSize: 18,
@@ -234,14 +236,14 @@ class PaymentOptionsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTotalSection(CartProvider cartProvider) {
+  Widget _buildTotalSection(BuildContext context, CartProvider cartProvider) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppTheme.surfaceDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
+        border: Border.all(color: AppTheme.borderDark.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
@@ -254,7 +256,7 @@ class PaymentOptionsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '\$${cartProvider.total.toStringAsFixed(2)}',
+            FormatHelper.formatPrice(cartProvider.total, symbol: Provider.of<CurrencyProvider>(context, listen: false).currencySymbol),
             style: const TextStyle(
               color: AppTheme.primaryGreen,
               fontSize: 48,

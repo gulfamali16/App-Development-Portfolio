@@ -84,4 +84,20 @@ class SettingsService {
   Future<void> clearGoogleDriveEmail() async {
     await deleteSetting('google_drive_email');
   }
+
+  /// Get selected currency code
+  Future<String?> getCurrencyCode() async {
+    return await getSetting('currency_code');
+  }
+
+  /// Get selected currency symbol
+  Future<String?> getCurrencySymbol() async {
+    return await getSetting('currency_symbol');
+  }
+
+  /// Set currency preference
+  Future<void> setCurrency(String code, String symbol) async {
+    await setSetting('currency_code', code);
+    await setSetting('currency_symbol', symbol);
+  }
 }

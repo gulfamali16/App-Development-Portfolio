@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../config/routes.dart';
 import '../config/theme.dart';
 import '../services/firestore_sync_service.dart';
+import '../services/settings_service.dart';
+import '../services/backup_service.dart';
 import '../utils/constants.dart';
 
 /// Splash screen with Velocity POS branding
@@ -85,6 +87,26 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         
         // Start auto-sync
         FirestoreSyncService().startAutoSync();
+        
+        // Auto-Backup Check (Every 24 Hours)
+        final settingsService = SettingsService();
+        final autoBackup = await settingsService.getAutoBackupEnabled();
+        if (autoBackup) {
+          final lastBackup = await settingsService.getLastBackupTime();
+          final driveEmail = await settingsService.getGoogleDriveEmail();
+          
+          // If Drive is connected and 24 hours have passed
+          if (driveEmail != null && 
+              (lastBackup == null || DateTime.now().difference(lastBackup).inHours >= 24)) {
+            final backupService = BackupService();
+            // Fire and forget - don't block app launch
+            backupService.backupDatabase().then((success) {
+              if (success) debugPrint('Auto-backup completed successfully in background.');
+            }).catchError((e) {
+              debugPrint('Auto-backup failed: $e');
+            });
+          }
+        }
       } catch (e) {
         debugPrint('Error syncing data: $e');
       }

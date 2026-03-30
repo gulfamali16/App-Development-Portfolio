@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../models/sale_model.dart';
 import '../../services/sales_service.dart';
+import '../../providers/currency_provider.dart';
 import '../../utils/format_helper.dart';
 
 /// Sales History Screen - Shows all sales/orders
@@ -133,7 +135,7 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                 ],
               ),
               Text(
-                '\$${sale.total.toStringAsFixed(2)}',
+                FormatHelper.formatPrice(sale.total, symbol: Provider.of<CurrencyProvider>(context, listen: false).currencySymbol),
                 style: const TextStyle(
                   color: AppTheme.primaryGreen,
                   fontSize: 20,

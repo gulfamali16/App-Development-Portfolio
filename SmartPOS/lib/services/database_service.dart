@@ -248,6 +248,11 @@ class DatabaseService {
       } catch (e) {
         // Column might already exist
       }
+      try {
+        await db.execute('ALTER TABLE products ADD COLUMN imageUrl TEXT');
+      } catch (e) {
+        // Column might already exist
+      }
 
       // Add stock movements table
       await db.execute('''
@@ -371,7 +376,7 @@ class DatabaseService {
     }
   }
 
-  /// Clear all data (for logout or reset)
+  /// Clear all data (for full reset only)
   Future<void> clearAllData() async {
     final db = await database;
     await db.delete('users');
@@ -385,6 +390,14 @@ class DatabaseService {
     await db.delete('notifications');
     await db.delete('settings');
     await db.delete('ledger');
+  }
+
+  /// Clear only session data on logout (preserves sales, products, customers, settings)
+  Future<void> clearSessionData() async {
+    final db = await database;
+    await db.delete('users');
+    await db.delete('sync_queue');
+    await db.delete('notifications');
   }
 
   /// Insert or update user

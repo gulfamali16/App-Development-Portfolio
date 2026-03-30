@@ -333,6 +333,7 @@ class FirestoreSyncService {
           'minStock': prod['minStockLevel'] ?? 10,
           'unitType': prod['unit'] ?? 'item',
           'categoryId': prod['categoryId'],
+          'imageUrl': prod['imageUrl'],
           'createdAt': prod['createdAt'],
           'updatedAt': prod['updatedAt'],
           'syncStatus': 0,

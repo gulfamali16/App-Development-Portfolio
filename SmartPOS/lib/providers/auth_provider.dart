@@ -142,7 +142,7 @@ class AuthProvider with ChangeNotifier {
       _setError(null);
 
       await _authService.signOut();
-      await _databaseService.clearAllData();
+      await _databaseService.clearSessionData();
       
       _user = null;
       _setLoading(false);

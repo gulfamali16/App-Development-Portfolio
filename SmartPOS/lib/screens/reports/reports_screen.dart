@@ -401,11 +401,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: AppTheme.textSecondary,
-              size: 16,
-            ),
           ],
         ),
       ),

@@ -8,6 +8,7 @@ import '../../config/theme.dart';
 import '../../config/routes.dart';
 import '../../services/settings_service.dart';
 import '../../services/database_service.dart';
+import '../../services/backup_service.dart';
 import '../../providers/auth_provider.dart';
 
 /// Settings screen
@@ -21,7 +22,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final SettingsService _settingsService = SettingsService();
   final DatabaseService _databaseService = DatabaseService();
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final BackupService _backupService = BackupService();
   
   bool _autoBackupEnabled = false;
   bool _isBackingUp = false;
@@ -69,34 +70,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _backupData() async {
+    if (_googleDriveEmail == null) {
+      Fluttertoast.showToast(msg: 'Please connect to Google Drive first', backgroundColor: Colors.orange);
+      return;
+    }
+    if (_connectivityStatus == ConnectivityResult.none) {
+      Fluttertoast.showToast(msg: 'No internet connection', backgroundColor: Colors.orange);
+      return;
+    }
+
     setState(() => _isBackingUp = true);
     
     try {
-      // Simulate backup process
-      await Future.delayed(const Duration(seconds: 2));
+      final success = await _backupService.backupDatabase();
       
-      // Update last backup time
-      final now = DateTime.now();
-      await _settingsService.setLastBackupTime(now);
-      setState(() {
-        _lastBackupTime = now;
-      });
-      
-      if (mounted) {
-        Fluttertoast.showToast(
-          msg: 'Data backed up successfully',
-          backgroundColor: Colors.green,
-        );
+      if (success) {
+        final now = DateTime.now();
+        setState(() {
+          _lastBackupTime = now;
+        });
+        if (mounted) {
+          Fluttertoast.showToast(
+            msg: 'Data backed up successfully',
+            backgroundColor: Colors.green,
+          );
+        }
+      } else {
+        if (mounted) {
+          Fluttertoast.showToast(
+            msg: 'Backup failed',
+            backgroundColor: Colors.red,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         Fluttertoast.showToast(
-          msg: 'Backup failed: $e',
+          msg: 'Backup error: $e',
           backgroundColor: Colors.red,
         );
       }
     } finally {
-      setState(() => _isBackingUp = false);
+      if (mounted) {
+        setState(() => _isBackingUp = false);
+      }
     }
   }
 
@@ -120,45 +137,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _connectGoogleDrive() async {
     try {
-      final account = await _googleSignIn.signIn();
+      final account = await _backupService.connectGoogleDrive();
       if (account != null) {
         await _settingsService.setGoogleDriveEmail(account.email);
         setState(() {
           _googleDriveEmail = account.email;
         });
-        Fluttertoast.showToast(
-          msg: 'Google Drive connected',
-          backgroundColor: Colors.green,
-        );
+        if (mounted) {
+          Fluttertoast.showToast(
+            msg: 'Google Drive connected',
+            backgroundColor: Colors.green,
+          );
+        }
       }
     } catch (e) {
-      Fluttertoast.showToast(
-        msg: 'Failed to connect Google Drive: $e',
-        backgroundColor: Colors.red,
-      );
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: 'Failed to connect Google Drive: $e',
+          backgroundColor: Colors.red,
+        );
+      }
     }
   }
 
   Future<void> _disconnectGoogleDrive() async {
     try {
-      await _googleSignIn.signOut();
+      await _backupService.disconnectGoogleDrive();
       await _settingsService.clearGoogleDriveEmail();
       setState(() {
         _googleDriveEmail = null;
       });
-      Fluttertoast.showToast(
-        msg: 'Google Drive disconnected',
-        backgroundColor: Colors.green,
-      );
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: 'Google Drive disconnected',
+          backgroundColor: Colors.green,
+        );
+      }
     } catch (e) {
-      Fluttertoast.showToast(
-        msg: 'Failed to disconnect: $e',
-        backgroundColor: Colors.red,
-      );
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: 'Failed to disconnect: $e',
+          backgroundColor: Colors.red,
+        );
+      }
     }
   }
 
   Future<void> _restoreData() async {
+    if (_googleDriveEmail == null) {
+      Fluttertoast.showToast(msg: 'Please connect to Google Drive first', backgroundColor: Colors.orange);
+      return;
+    }
+    if (_connectivityStatus == ConnectivityResult.none) {
+      Fluttertoast.showToast(msg: 'No internet connection', backgroundColor: Colors.orange);
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -188,20 +222,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirmed == true) {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
       try {
-        // Simulate restore process
-        await Future.delayed(const Duration(seconds: 2));
+        final success = await _backupService.restoreDatabase();
         
-        if (mounted) {
+        // Hide loading
+        if (mounted) Navigator.pop(context);
+        
+        if (success && mounted) {
           Fluttertoast.showToast(
-            msg: 'Data restored successfully',
+            msg: 'Data restored successfully. Please restart app.',
             backgroundColor: Colors.green,
+            toastLength: Toast.LENGTH_LONG,
+          );
+        } else if (mounted) {
+          Fluttertoast.showToast(
+            msg: 'Restore failed',
+            backgroundColor: Colors.red,
           );
         }
       } catch (e) {
+        if (mounted) Navigator.pop(context); // hide loading
         if (mounted) {
           Fluttertoast.showToast(
-            msg: 'Restore failed: $e',
+            msg: 'Restore error: $e',
             backgroundColor: Colors.red,
           );
         }
@@ -243,16 +293,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // Sign out from Firebase and Google
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         await authProvider.signOut();
-        await _googleSignIn.signOut();
+        await _backupService.disconnectGoogleDrive();
         
         if (mounted) {
           Navigator.pushReplacementNamed(context, AppRoutes.login);
         }
       } catch (e) {
-        Fluttertoast.showToast(
-          msg: 'Logout failed: $e',
-          backgroundColor: Colors.red,
-        );
+        if (mounted) {
+          Fluttertoast.showToast(
+            msg: 'Logout failed: $e',
+            backgroundColor: Colors.red,
+          );
+        }
       }
     }
   }

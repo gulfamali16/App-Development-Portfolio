@@ -7,9 +7,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/sales_provider.dart';
+import '../../providers/currency_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/format_helper.dart';
-import '../../services/sales_service.dart';
 import '../main_screen.dart';
 
 /// Helper function to format numbers with K, M suffix
@@ -112,21 +112,31 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   Future<void> _loadData() async {
     final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    final salesProvider = Provider.of<SalesProvider>(context, listen: false);
     
     await Future.wait([
       inventoryProvider.loadDashboardStats(),
       productProvider.loadProducts(),
+      // Load today's sales from the database so they persist across logout/login
+      salesProvider.loadTodaysSales(),
     ]);
   }
 
   @override
   Widget build(BuildContext context) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context);
+    final symbol = currencyProvider.currencySymbol;
+
     return SafeArea(
-      child: Consumer3<AuthProvider, InventoryProvider, ProductProvider>(
-        builder: (context, authProvider, inventoryProvider, productProvider, child) {
+      child: Consumer4<AuthProvider, InventoryProvider, ProductProvider, SalesProvider>(
+        builder: (context, authProvider, inventoryProvider, productProvider, salesProvider, child) {
           final user = authProvider.user;
           final stats = inventoryProvider.dashboardStats;
           final lowStockProducts = productProvider.lowStockProducts;
+          // Get today's sales total from sales provider (database-backed)
+          final todaysSalesFromDb = salesProvider.sales.fold<double>(0.0, (sum, sale) => sum + sale.total);
+          // Use the database value if available, fall back to dashboard stats
+          final todaysSales = todaysSalesFromDb > 0 ? todaysSalesFromDb : (stats['todaysSales'] ?? 0.0);
 
           return RefreshIndicator(
             onRefresh: _loadData,
@@ -138,10 +148,10 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(context, user?.name ?? 'User'),
-                  _buildOverviewSection(stats),
+                  _buildOverviewSection(stats, todaysSales, symbol),
                   _buildQuickActions(),
                   if (lowStockProducts.isNotEmpty) _buildLowStockAlert(lowStockProducts.length),
-                  _buildRecentActivity(),
+                  _buildRecentActivity(salesProvider, symbol),
                   const SizedBox(height: 80),
                 ],
               ),
@@ -185,33 +195,12 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
             icon: const Icon(Icons.settings_outlined, color: Colors.white),
             onPressed: () => Navigator.pushNamed(context, AppRoutes.settings),
           ),
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.alertRed,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildOverviewSection(Map<String, dynamic> stats) {
-    final todaysSales = stats['todaysSales'] ?? 0.0;
+  Widget _buildOverviewSection(Map<String, dynamic> stats, double todaysSales, String symbol) {
     final totalProducts = stats['totalProducts'] ?? 0;
     final lowStockCount = stats['lowStockCount'] ?? 0;
 
@@ -236,7 +225,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
               children: [
                 _buildStatCard(
                   'Today\'s Sales',
-                  FormatHelper.formatMoney(todaysSales),
+                  FormatHelper.formatMoney(todaysSales, symbol: symbol),
                   Icons.payments,
                   AppTheme.primaryBlue,
                   isGradient: true,
@@ -499,7 +488,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
     );
   }
 
-  Widget _buildRecentActivity() {
+  Widget _buildRecentActivity(SalesProvider salesProvider, String symbol) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -529,10 +518,9 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
             ],
           ),
           const SizedBox(height: 12),
-          FutureBuilder(
-            future: SalesService().getTodaysSales(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+          Builder(
+            builder: (context) {
+              if (salesProvider.isLoading) {
                 return Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -546,7 +534,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                 );
               }
               
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              if (salesProvider.sales.isEmpty) {
                 return Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -566,7 +554,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                 );
               }
 
-              final sales = snapshot.data!.take(5).toList();
+              final sales = salesProvider.sales.take(5).toList();
               return Column(
                 children: sales.map((sale) => Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -604,7 +592,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                         ),
                       ),
                       Text(
-                        FormatHelper.formatMoney(sale.total),
+                        FormatHelper.formatMoney(sale.total, symbol: symbol),
                         style: const TextStyle(
                           color: AppTheme.primaryGreen,
                           fontWeight: FontWeight.bold,

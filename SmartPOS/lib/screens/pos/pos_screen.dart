@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/currency_provider.dart';
 import '../../models/product_model.dart';
 import '../../models/category_model.dart';
 import '../../utils/format_helper.dart';
@@ -66,8 +67,8 @@ class _POSScreenState extends State<POSScreen> {
                 Expanded(
                   child: _buildProductGrid(),
                 ),
-                // Space for collapsed cart
-                const SizedBox(height: 140),
+                // Space for collapsed cart + bottom nav clearance
+                const SizedBox(height: 160),
               ],
             ),
           ),
@@ -135,28 +136,6 @@ class _POSScreenState extends State<POSScreen> {
             onPressed: () {
               Navigator.pushNamed(context, '/settings');
             },
-          ),
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/notifications');
-                },
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.alertRed,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -398,7 +377,7 @@ class _POSScreenState extends State<POSScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '\$${product.price.toStringAsFixed(2)}',
+                          FormatHelper.formatPrice(product.price, symbol: Provider.of<CurrencyProvider>(context, listen: false).currencySymbol),
                           style: TextStyle(
                             color: isOutOfStock ? AppTheme.textSecondary : AppTheme.primaryGreen,
                             fontSize: 16,
@@ -428,22 +407,35 @@ class _POSScreenState extends State<POSScreen> {
   }
 
   Widget _buildCartPanel() {
-    return DraggableScrollableSheet(
-      controller: _cartController,
-      initialChildSize: 0.20,
-      minChildSize: 0.20,
-      maxChildSize: 0.85,
-      snap: true,
-      snapSizes: const [0.20, 0.5, 0.85],
-      builder: (context, scrollController) {
-        return Consumer<CartProvider>(
-          builder: (context, cartProvider, child) {
+    return Consumer<CartProvider>(
+      builder: (context, cartProvider, child) {
+        final bool isEmpty = cartProvider.isEmpty;
+        // Get the bottom nav bar height to ensure cart doesn't overlap it
+        final bottomNavHeight = kBottomNavigationBarHeight + MediaQuery.of(context).padding.bottom;
+        final screenHeight = MediaQuery.of(context).size.height;
+        // Calculate fractional offset for bottom nav clearance
+        final bottomNavFraction = bottomNavHeight / screenHeight;
+        
+        // Sizes that account for the bottom navigation bar
+        final double emptyInitial = 0.10 + bottomNavFraction;
+        final double emptyMin = 0.08 + bottomNavFraction;
+        final double hasItemsInitial = 0.18 + bottomNavFraction;
+        final double hasItemsMin = 0.18 + bottomNavFraction;
+        
+        return DraggableScrollableSheet(
+          controller: _cartController,
+          initialChildSize: isEmpty ? emptyInitial : hasItemsInitial,
+          minChildSize: isEmpty ? emptyMin : hasItemsMin,
+          maxChildSize: isEmpty ? emptyInitial : 0.90,
+          snap: true,
+          snapSizes: isEmpty ? [emptyInitial] : [hasItemsInitial, 0.55, 0.90],
+          builder: (context, scrollController) {
             return GestureDetector(
               onTap: () {
                 // Toggle cart expansion on tap of header area
-                if (_cartController.size < 0.5) {
+                if (!isEmpty && _cartController.size < 0.5) {
                   _cartController.animateTo(
-                    0.85,
+                    0.90,
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOut,
                   );
@@ -463,7 +455,7 @@ class _POSScreenState extends State<POSScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Drag handle - CRITICAL FOR DRAGGING
+                    // Drag handle
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -511,31 +503,14 @@ class _POSScreenState extends State<POSScreen> {
                     
                     // Cart content
                     Expanded(
-                      child: cartProvider.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.shopping_cart_outlined,
-                                    size: 64,
-                                    color: AppTheme.textSecondary.withOpacity(0.5),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Cart is empty',
-                                    style: TextStyle(
-                                      color: AppTheme.textSecondary,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
+                      child: isEmpty
+                          // Empty state: compact, no large icon/text overlay
+                          ? const SizedBox.shrink()
                           : ListView(
                               controller: scrollController,
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
                               children: [
+                                const SizedBox(height: 8),
                                 ...cartProvider.items.map((item) => _buildCartItem(item, cartProvider)),
                                 const SizedBox(height: 16),
                                 
@@ -571,12 +546,18 @@ class _POSScreenState extends State<POSScreen> {
                             ),
                     ),
                     
-                    // Proceed button - ALWAYS VISIBLE
+                    // Proceed button - visible when cart has items
                     if (cartProvider.itemCount > 0)
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.only(
+                          left: 16, 
+                          right: 16, 
+                          top: 12, 
+                          // Add enough bottom padding to clear the bottom nav bar
+                          bottom: bottomNavHeight + 8,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppTheme.backgroundDark,
+                          color: const Color(0xFF1E1E1E),
                           border: Border(
                             top: BorderSide(color: AppTheme.borderDark.withOpacity(0.5)),
                           ),
@@ -612,6 +593,10 @@ class _POSScreenState extends State<POSScreen> {
                           ),
                         ),
                       ),
+                    
+                    // Bottom spacer for empty cart to clear nav bar
+                    if (isEmpty)
+                      SizedBox(height: bottomNavHeight + 8),
                   ],
                 ),
               ),
@@ -635,8 +620,8 @@ class _POSScreenState extends State<POSScreen> {
         children: [
           // Product image
           Container(
-            width: 60,
-            height: 60,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
               color: AppTheme.surfaceDark,
               borderRadius: BorderRadius.circular(8),
@@ -644,15 +629,17 @@ class _POSScreenState extends State<POSScreen> {
             child: Icon(
               Icons.inventory_2,
               color: AppTheme.primaryGreen.withOpacity(0.5),
+              size: 24,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           
           // Product info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Product name and delete button
                 Row(
                   children: [
                     Expanded(
@@ -667,28 +654,30 @@ class _POSScreenState extends State<POSScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, color: AppTheme.alertRed, size: 20),
+                      icon: const Icon(Icons.delete_outline, color: AppTheme.alertRed, size: 18),
                       onPressed: () {
                         cartProvider.removeItem(item.productId);
                       },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
+                      visualDensity: VisualDensity.compact,
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 
+                // Price, quantity and total row
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Price (editable)
+                    // Price (editable) - compact
                     GestureDetector(
                       onTap: () {
                         _showEditPriceDialog(item, cartProvider);
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
                           color: AppTheme.surfaceDark,
                           borderRadius: BorderRadius.circular(6),
@@ -697,69 +686,52 @@ class _POSScreenState extends State<POSScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              '\$${item.customPrice.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                color: AppTheme.primaryGreen,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.edit, size: 12, color: AppTheme.primaryGreen),
+                            const Icon(Icons.edit, size: 10, color: AppTheme.primaryGreen),
+                            const SizedBox(width: 3),
                           ],
                         ),
                       ),
                     ),
-                    
+                    const SizedBox(width: 6),
                     // Quantity controls
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.remove_circle_outline, color: AppTheme.primaryGreen),
-                          onPressed: () {
-                            cartProvider.decrementQuantity(item.productId);
-                          },
-                          iconSize: 24,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 12),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surfaceDark,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '${item.quantity}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle, color: AppTheme.primaryGreen),
-                          onPressed: () {
-                            cartProvider.incrementQuantity(item.productId);
-                          },
-                          iconSize: 24,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
+                    GestureDetector(
+                      onTap: () {
+                        cartProvider.decrementQuantity(item.productId);
+                      },
+                      child: const Icon(Icons.remove_circle_outline, color: AppTheme.primaryGreen, size: 22),
                     ),
-                    
-                    // Line total
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceDark,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${item.quantity}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        cartProvider.incrementQuantity(item.productId);
+                      },
+                      child: const Icon(Icons.add_circle, color: AppTheme.primaryGreen, size: 22),
+                    ),
+                    const Spacer(),
+                    // Line total - won't shrink/clip
                     Text(
-                      '\$${item.lineTotal.toStringAsFixed(2)}',
+                      FormatHelper.formatPrice(item.lineTotal, symbol: Provider.of<CurrencyProvider>(context, listen: false).currencySymbol),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -787,7 +759,7 @@ class _POSScreenState extends State<POSScreen> {
             children: [
               const Text('Subtotal', style: TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
               Text(
-                '\$${cartProvider.subtotal.toStringAsFixed(2)}',
+                FormatHelper.formatPrice(cartProvider.subtotal, symbol: Provider.of<CurrencyProvider>(context, listen: false).currencySymbol),
                 style: const TextStyle(color: Colors.white, fontSize: 14),
               ),
             ],
@@ -811,7 +783,7 @@ class _POSScreenState extends State<POSScreen> {
               ),
               if (cartProvider.discount > 0)
                 Text(
-                  '-\$${cartProvider.discountAmount.toStringAsFixed(2)}',
+                  '-${FormatHelper.formatPrice(cartProvider.discountAmount, symbol: Provider.of<CurrencyProvider>(context, listen: false).currencySymbol)}',
                   style: const TextStyle(color: AppTheme.alertRed, fontSize: 14),
                 ),
             ],
@@ -831,7 +803,7 @@ class _POSScreenState extends State<POSScreen> {
                 ),
               ),
               Text(
-                '\$${cartProvider.total.toStringAsFixed(2)}',
+                FormatHelper.formatPrice(cartProvider.total, symbol: Provider.of<CurrencyProvider>(context, listen: false).currencySymbol),
                 style: const TextStyle(
                   color: AppTheme.primaryBlue,
                   fontSize: 24,

@@ -11,6 +11,7 @@ import 'providers/inventory_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/customer_provider.dart';
 import 'providers/sales_provider.dart';
+import 'providers/currency_provider.dart';
 import 'services/firestore_sync_service.dart';
 import 'utils/constants.dart';
 
@@ -47,6 +48,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => CustomerProvider()),
         ChangeNotifierProvider(create: (_) => SalesProvider()),
+        ChangeNotifierProvider(create: (_) {
+          final currencyProvider = CurrencyProvider();
+          currencyProvider.loadCurrency();
+          return currencyProvider;
+        }),
       ],
       child: MaterialApp(
         title: AppConstants.appName,
@@ -59,3 +65,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
