@@ -14,7 +14,7 @@ This directory should contain the `google-services.json` file for Firebase integ
 ### Step 2: Register Android App
 1. In Firebase Console, click on "Add App" → Android icon
 2. Enter the following details:
-   - **Package name**: `com.example.smartpos` (must match applicationId in build.gradle.kts)
+   - **Package name**: `com.gulfamali.smartpos` (must match applicationId in build.gradle.kts)
    - **App nickname**: Smart POS (optional)
    - **Debug signing certificate SHA-1**: (optional, needed for Google Sign In)
 
