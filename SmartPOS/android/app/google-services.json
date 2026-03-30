@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:732422342282:android:63aeb66427454e4de20f73",
         "android_client_info": {
-          "package_name": "com.example.smartpos"
+          "package_name": "com.gulfamali.smartpos"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "732422342282-qlh8rih9doudbe34aciga15j16k7g65p.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.smartpos",
+            "package_name": "com.gulfamali.smartpos",
             "certificate_hash": "aa49cf04d2722688f66ea043003e843b28457e95"
           }
         },
