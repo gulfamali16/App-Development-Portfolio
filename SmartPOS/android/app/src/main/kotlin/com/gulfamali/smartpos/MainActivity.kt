@@ -1,4 +1,4 @@
-package com.example.smartpos
+package com.gulfamali.smartpos
 
 import io.flutter.embedding.android.FlutterActivity
 
