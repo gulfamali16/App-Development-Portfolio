@@ -99,12 +99,20 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           if (driveEmail != null && 
               (lastBackup == null || DateTime.now().difference(lastBackup).inHours >= 24)) {
             final backupService = BackupService();
-            // Fire and forget - don't block app launch
-            backupService.backupDatabase().then((success) {
-              if (success) debugPrint('Auto-backup completed successfully in background.');
-            }).catchError((e) {
-              debugPrint('Auto-backup failed: $e');
-            });
+            // Verify silent sign-in succeeds before attempting backup
+            final signedInEmail = await backupService.getSignedInEmail();
+            if (signedInEmail != null) {
+              // Fire and forget - don't block app launch
+              backupService.backupDatabase().then((success) {
+                if (success) debugPrint('Auto-backup completed successfully in background.');
+              }).catchError((e) {
+                debugPrint('Auto-backup failed: $e');
+              });
+            } else {
+              debugPrint('Auto-backup skipped: Google account not signed in.');
+              // Clear stale email so Settings shows correct state
+              await settingsService.clearGoogleDriveEmail();
+            }
           }
         }
       } catch (e) {
