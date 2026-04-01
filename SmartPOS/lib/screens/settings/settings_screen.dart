@@ -41,12 +41,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final autoBackup = await _settingsService.getAutoBackupEnabled();
       final lastBackup = await _settingsService.getLastBackupTime();
-      final driveEmail = await _settingsService.getGoogleDriveEmail();
+      final storedEmail = await _settingsService.getGoogleDriveEmail();
+
+      // Reconcile stored email with the actual Google sign-in state.
+      // Silent sign-in confirms the session is still valid; if it fails,
+      // clear the stale stored email so the UI shows "Not connected".
+      final signedInEmail = await _backupService.getSignedInEmail();
+      if (signedInEmail != null && signedInEmail != storedEmail) {
+        await _settingsService.setGoogleDriveEmail(signedInEmail);
+      } else if (signedInEmail == null && storedEmail != null) {
+        await _settingsService.clearGoogleDriveEmail();
+      }
       
       setState(() {
         _autoBackupEnabled = autoBackup;
         _lastBackupTime = lastBackup;
-        _googleDriveEmail = driveEmail;
+        _googleDriveEmail = signedInEmail;
       });
     } catch (e) {
       // Handle error

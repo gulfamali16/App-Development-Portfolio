@@ -21,11 +21,52 @@ class BackupService {
   static const String _backupFolderName = 'SmartPOS Backups';
   static const String _backupFileName = 'SmartPOS.db';
 
+  /// Ensures the user is signed in. Tries silent sign-in first.
+  /// Only performs interactive sign-in when [interactive] is true.
+  /// Returns the signed-in account, or null if sign-in failed.
+  Future<GoogleSignInAccount?> _ensureSignedIn({bool interactive = false}) async {
+    try {
+      // Return existing session if available
+      if (_googleSignIn.currentUser != null) {
+        return _googleSignIn.currentUser;
+      }
+
+      // Try silent sign-in (uses cached credentials, no UI shown)
+      final silentAccount = await _googleSignIn.signInSilently();
+      if (silentAccount != null) {
+        debugPrint('Silent sign-in succeeded: ${silentAccount.email}');
+        return silentAccount;
+      }
+
+      // Interactive sign-in only when explicitly requested (e.g. user tapped Connect)
+      if (interactive) {
+        final account = await _googleSignIn.signIn();
+        if (account != null) {
+          debugPrint('Interactive sign-in succeeded: ${account.email}');
+        }
+        return account;
+      }
+
+      debugPrint('Sign-in required but interactive is false; skipping.');
+      return null;
+    } catch (e) {
+      debugPrint('Error during sign-in: $e');
+      return null;
+    }
+  }
+
+  /// Returns the currently signed-in account email via silent sign-in,
+  /// or null if not signed in. Does not show any UI.
+  Future<String?> getSignedInEmail() async {
+    final account = await _ensureSignedIn(interactive: false);
+    return account?.email;
+  }
+
+  /// Connect to Google Drive interactively (called when user taps Connect).
+  /// Tries silent sign-in first to avoid unnecessary re-consent prompts.
   Future<GoogleSignInAccount?> connectGoogleDrive() async {
     try {
-      // Disconnect first to force a fresh auth with the correct scopes
-      await _googleSignIn.signOut();
-      final account = await _googleSignIn.signIn();
+      final account = await _ensureSignedIn(interactive: true);
       if (account != null) {
         debugPrint('Google Drive connected: ${account.email}');
       }
@@ -73,7 +114,7 @@ class BackupService {
     try {
       debugPrint('Starting backup...');
       
-      final account = _googleSignIn.currentUser;
+      final account = await _ensureSignedIn(interactive: false);
       if (account == null) {
         debugPrint('Backup failed: No Google account signed in');
         return false;
@@ -139,6 +180,12 @@ class BackupService {
     try {
       debugPrint('Starting restore...');
       
+      final account = await _ensureSignedIn(interactive: false);
+      if (account == null) {
+        debugPrint('Restore failed: No Google account signed in');
+        return false;
+      }
+
       final authClient = await _googleSignIn.authenticatedClient();
       if (authClient == null) {
         debugPrint('Restore failed: Could not get authenticated client');
