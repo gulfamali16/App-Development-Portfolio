@@ -3,6 +3,9 @@ import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:share_plus/share_plus.dart';
+import 'package:provider/provider.dart';
+import '../../providers/category_provider.dart';
 import '../../services/product_service.dart';
 import '../../models/product_model.dart';
 import '../../config/theme.dart';
@@ -19,7 +22,7 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
   int _importedCount = 0;
   final ProductService _productService = ProductService();
 
-  // ✅ Export Template Excel
+  // ✅ Export Template Excel to Downloads/Recent
   Future<void> _exportTemplate() async {
     setState(() => _isLoading = true);
     
@@ -53,19 +56,22 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
         TextCellValue('https://example.com/image.jpg'),
       ]);
       
-      // Save file
-      final directory = await getExternalStorageDirectory();
-      final path = '${directory!.path}/product_template.xlsx';
-      File(path)
-        ..createSync(recursive: true)
-        ..writeAsBytesSync(excel.encode()!);
+      final bytes = excel.encode();
+      if (bytes == null) throw Exception("Failed to encode excel");
+
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/product_template.xlsx';
+      final file = File(path);
+      await file.writeAsBytes(bytes);
+      
+      // Use Share to let user save it to Downloads or open it
+      await Share.shareXFiles([XFile(path)], text: 'Product Import Template');
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Template saved to: $path'),
+          const SnackBar(
+            content: Text('Template ready! Please save it to your device.'),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -100,39 +106,76 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
         var bytes = File(result.files.single.path!).readAsBytesSync();
         var excel = Excel.decodeBytes(bytes);
         
-        for (var table in excel.tables.keys) {
-          var sheet = excel.tables[table]!;
+        if (!mounted) return;
+        final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
+        await categoryProvider.loadCategories();
+        final categories = categoryProvider.categories;
+        
+        if (excel.tables.isEmpty) throw Exception('Excel file is empty');
+        
+        // Take ONLY the first sheet
+        var sheetName = excel.tables.keys.first;
+        var sheet = excel.tables[sheetName]!;
+        
+        if (sheet.maxRows == 0) throw Exception('Sheet is empty');
+        
+        // Validate headers
+        var headerRow = sheet.row(0);
+        if (headerRow.isEmpty || 
+            headerRow[0]?.value?.toString() != 'Name*' || 
+            headerRow[4]?.value?.toString() != 'Selling Price*') {
+          throw Exception('Invalid template format. Please export and use the provided template.');
+        }
           
-          // Skip header row (index 0)
-          for (int i = 1; i < sheet.maxRows; i++) {
-            try {
-              var row = sheet.row(i);
-              
-              // Validate required fields (Name, Selling Price, Quantity)
-              if (row.isEmpty || row[0]?.value == null || row[4]?.value == null || row[5]?.value == null) {
-                continue; // Skip invalid rows
-              }
-              
-              final product = ProductModel(
-                id: DateTime.now().millisecondsSinceEpoch.toString() + i.toString(),
-                name: row[0]?.value?.toString() ?? '',
-                categoryId: row[1]?.value?.toString(),
-                barcode: row[2]?.value?.toString(),
-                costPrice: double.tryParse(row[3]?.value?.toString() ?? '0') ?? 0.0,
-                price: double.tryParse(row[4]?.value?.toString() ?? '0') ?? 0.0,
-                quantity: int.tryParse(row[5]?.value?.toString() ?? '0') ?? 0,
-                minStock: int.tryParse(row[6]?.value?.toString() ?? '5') ?? 5,
-                description: row[7]?.value?.toString(),
-                imageUrl: row[8]?.value?.toString(),
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
-              );
-              
-              await _productService.createProduct(product);
-              _importedCount++;
-            } catch (e) {
-              debugPrint('Error importing row $i: $e');
+        // Skip header row (index 0)
+        for (int i = 1; i < sheet.maxRows; i++) {
+          try {
+            var row = sheet.row(i);
+            
+            // Validate required fields (Name, Selling Price, Quantity)
+            if (row.isEmpty || row[0]?.value == null || row[4]?.value == null || row[5]?.value == null) {
+              continue; // Skip invalid or empty rows
             }
+            
+            // Category mapping validation
+            String? categoryName = row[1]?.value?.toString();
+            String? mappedCategoryId;
+            
+            if (categoryName != null && categoryName.trim().isNotEmpty) {
+              final matchingCategories = categories.where(
+                (c) => c.name.toLowerCase() == categoryName.trim().toLowerCase()
+              ).toList();
+              
+              if (matchingCategories.isNotEmpty) {
+                mappedCategoryId = matchingCategories.first.id;
+              } else {
+                throw Exception('Category "${categoryName.trim()}" in row ${i + 1} does not exist. Please create it first.');
+              }
+            }
+            
+            final product = ProductModel(
+              id: DateTime.now().millisecondsSinceEpoch.toString() + i.toString(),
+              name: row[0]?.value?.toString().trim() ?? '',
+              categoryId: mappedCategoryId,
+              barcode: row[2]?.value?.toString().trim(),
+              costPrice: double.tryParse(row[3]?.value?.toString() ?? '0') ?? 0.0,
+              price: double.tryParse(row[4]?.value?.toString() ?? '0') ?? 0.0,
+              quantity: int.tryParse(row[5]?.value?.toString() ?? '0') ?? 0,
+              minStock: int.tryParse(row[6]?.value?.toString() ?? '5') ?? 5,
+              description: row[7]?.value?.toString().trim(),
+              imageUrl: row[8]?.value?.toString().trim(),
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+            
+            await _productService.createProduct(product);
+            _importedCount++;
+          } catch (e) {
+            // Rethrow specific validation errors to stop the whole import
+            if (e.toString().contains('Category')) {
+              rethrow;
+            }
+            debugPrint('Error importing row $i: $e');
           }
         }
         

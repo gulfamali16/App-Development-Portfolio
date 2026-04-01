@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/sales_provider.dart';
+import '../../providers/customer_provider.dart';
 import '../../providers/currency_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/format_helper.dart';
@@ -113,12 +114,14 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
     final inventoryProvider = Provider.of<InventoryProvider>(context, listen: false);
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
     final salesProvider = Provider.of<SalesProvider>(context, listen: false);
+    final customerProvider = Provider.of<CustomerProvider>(context, listen: false);
     
     await Future.wait([
       inventoryProvider.loadDashboardStats(),
       productProvider.loadProducts(),
       // Load today's sales from the database so they persist across logout/login
       salesProvider.loadTodaysSales(),
+      customerProvider.loadCustomers(),
     ]);
   }
 
@@ -126,6 +129,15 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   Widget build(BuildContext context) {
     final currencyProvider = Provider.of<CurrencyProvider>(context);
     final symbol = currencyProvider.currencySymbol;
+    
+    final customerProvider = Provider.of<CustomerProvider>(context);
+    final customers = customerProvider.customers;
+    double totalReceivable = 0;
+    double totalPayable = 0;
+    for (var c in customers) {
+      if (c.balance < 0) totalReceivable += c.balance.abs();
+      else if (c.balance > 0) totalPayable += c.balance;
+    }
 
     return SafeArea(
       child: Consumer4<AuthProvider, InventoryProvider, ProductProvider, SalesProvider>(
@@ -149,6 +161,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                 children: [
                   _buildHeader(context, user?.name ?? 'User'),
                   _buildOverviewSection(stats, todaysSales, symbol),
+                  _buildLedgerSummary(totalReceivable, totalPayable, symbol),
                   _buildQuickActions(),
                   if (lowStockProducts.isNotEmpty) _buildLowStockAlert(lowStockProducts.length),
                   _buildRecentActivity(salesProvider, symbol),
@@ -298,6 +311,76 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.7),
                   fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLedgerSummary(double receivable, double payable, String symbol) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Ledger Summary',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.outstandingBalances),
+                child: const Text('View All', style: TextStyle(color: AppTheme.primaryGreen)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('You will receive', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Text(FormatHelper.formatMoney(receivable, symbol: symbol), style: const TextStyle(color: AppTheme.alertRed, fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderDark.withOpacity(0.5)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('You will pay', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Text(FormatHelper.formatMoney(payable, symbol: symbol), style: const TextStyle(color: AppTheme.primaryBlue, fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -583,6 +666,8 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                             Text(
                               sale.customerName,
                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               '${sale.items.length} items',

@@ -134,9 +134,10 @@ class CustomerService {
         customer.toJson(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-      
-      // Sync to Firestore (if online)
-      await _syncService.syncCustomer(customer);
+      // Sync to Firestore in background
+      _syncService.syncCustomer(customer).catchError((e) {
+        print('Error syncing customer: $e');
+      });
     } catch (e) {
       throw Exception('Failed to add customer: $e');
     }
@@ -152,9 +153,10 @@ class CustomerService {
         where: 'id = ?',
         whereArgs: [customer.id],
       );
-      
-      // Sync to Firestore (if online)
-      await _syncService.syncCustomer(customer);
+      // Sync to Firestore in background
+      _syncService.syncCustomer(customer).catchError((e) {
+        print('Error syncing customer: $e');
+      });
     } catch (e) {
       throw Exception('Failed to update customer: $e');
     }
@@ -200,9 +202,10 @@ class CustomerService {
         where: 'id = ?',
         whereArgs: [id],
       );
-      
-      // Delete from Firestore (if online)
-      await _syncService.deleteCustomerFromCloud(id);
+      // Delete from Firestore in background
+      _syncService.deleteCustomerFromCloud(id).catchError((e) {
+        print('Error deleting customer: $e');
+      });
     } catch (e) {
       throw Exception('Failed to delete customer: $e');
     }

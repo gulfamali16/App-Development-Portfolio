@@ -7,6 +7,7 @@ import '../../models/customer_model.dart';
 import '../../widgets/customer_avatar.dart';
 import '../../utils/format_helper.dart';
 import 'add_customer_screen.dart';
+import 'customer_detail_sheet.dart';
 
 /// Customer list screen with filters
 class CustomersScreen extends StatefulWidget {
@@ -254,7 +255,12 @@ class _CustomersScreenState extends State<CustomersScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
-          // TODO: Open customer detail screen
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => CustomerDetailSheet(customer: customer),
+          );
         },
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -297,21 +303,24 @@ class _CustomersScreenState extends State<CustomersScreen> {
                           const SizedBox(width: 8),
                           Text(
                             '(Inactive)',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppTheme.textSecondary,
                               fontSize: 12,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ],
                     ),
-                    if (customer.phone != null)
                       Text(
                         customer.phone!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppTheme.textSecondary,
                           fontSize: 14,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                   ],
                 ),

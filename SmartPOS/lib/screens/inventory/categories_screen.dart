@@ -174,6 +174,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

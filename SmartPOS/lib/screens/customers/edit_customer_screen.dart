@@ -1,31 +1,70 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:email_validator/email_validator.dart';
 import '../../config/theme.dart';
 import '../../providers/customer_provider.dart';
 import '../../models/customer_model.dart';
 
-/// Screen for adding a new customer
-class AddCustomerScreen extends StatefulWidget {
-  const AddCustomerScreen({super.key});
+/// Screen for editing an existing customer
+class EditCustomerScreen extends StatefulWidget {
+  final CustomerModel customer;
+
+  const EditCustomerScreen({super.key, required this.customer});
 
   @override
-  State<AddCustomerScreen> createState() => _AddCustomerScreenState();
+  State<EditCustomerScreen> createState() => _EditCustomerScreenState();
 }
 
-class _AddCustomerScreenState extends State<AddCustomerScreen> {
+class _EditCustomerScreenState extends State<EditCustomerScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _pincodeController = TextEditingController();
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
+  late TextEditingController _emailController;
+  late TextEditingController _addressController;
+  late TextEditingController _cityController;
+  late TextEditingController _pincodeController;
   DateTime? _dateOfBirth;
   bool _isSaving = false;
   String _countryCode = '+92';
+  bool _isActive = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.customer.name);
+    
+    // Parse phone and country code
+    String phone = widget.customer.phone ?? '';
+    if (phone.contains(' ')) {
+      final parts = phone.split(' ');
+      if (['+92', '+91', '+1', '+44', '+971'].contains(parts[0])) {
+        _countryCode = parts[0];
+        phone = parts.sublist(1).join(' ');
+      }
+    } else {
+      // Find matching prefix if no space
+      for (var code in ['+92', '+91', '+1', '+44', '+971']) {
+        if (phone.startsWith(code)) {
+          _countryCode = code;
+          phone = phone.substring(code.length);
+          break;
+        }
+      }
+    }
+    
+    _phoneController = TextEditingController(text: phone);
+    _emailController = TextEditingController(text: widget.customer.email ?? '');
+    _addressController = TextEditingController(text: widget.customer.address ?? '');
+    _cityController = TextEditingController(text: widget.customer.city ?? '');
+    _pincodeController = TextEditingController(text: widget.customer.pincode ?? '');
+    
+    if (widget.customer.dateOfBirth != null) {
+      _dateOfBirth = DateTime.tryParse(widget.customer.dateOfBirth!);
+    }
+    
+    _isActive = widget.customer.isActive;
+  }
 
   @override
   void dispose() {
@@ -44,8 +83,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final customer = CustomerModel(
-        id: const Uuid().v4(),
+      final updatedCustomer = widget.customer.copyWith(
         name: _nameController.text.trim(),
         phone: '$_countryCode ${_phoneController.text.trim()}',
         email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
@@ -53,15 +91,15 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
         city: _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
         pincode: _pincodeController.text.trim().isEmpty ? null : _pincodeController.text.trim(),
         dateOfBirth: _dateOfBirth?.toIso8601String(),
-        createdAt: DateTime.now(),
+        isActive: _isActive,
         updatedAt: DateTime.now(),
       );
 
-      await Provider.of<CustomerProvider>(context, listen: false).addCustomer(customer);
+      await Provider.of<CustomerProvider>(context, listen: false).updateCustomer(updatedCustomer);
 
       if (mounted) {
         Fluttertoast.showToast(
-          msg: 'Customer added successfully',
+          msg: 'Customer updated successfully',
           backgroundColor: Colors.green,
         );
         Navigator.pop(context);
@@ -69,7 +107,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
     } catch (e) {
       if (mounted) {
         Fluttertoast.showToast(
-          msg: 'Failed to add customer: $e',
+          msg: 'Failed to update customer: $e',
           backgroundColor: Colors.red,
         );
       }
@@ -98,7 +136,22 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
       appBar: AppBar(
         backgroundColor: AppTheme.surfaceDark,
         elevation: 0,
-        title: const Text('Add Customer', style: TextStyle(color: Colors.white)),
+        title: const Text('Edit Customer', style: TextStyle(color: Colors.white)),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isActive ? Icons.toggle_on : Icons.toggle_off,
+              color: _isActive ? AppTheme.primaryGreen : Colors.grey,
+              size: 32,
+            ),
+            onPressed: () {
+              setState(() {
+                _isActive = !_isActive;
+              });
+            },
+            tooltip: _isActive ? 'Active Status: ON' : 'Active Status: OFF',
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,
@@ -133,14 +186,12 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                 prefixIcon: Icon(Icons.person, color: AppTheme.primaryGreen),
               ),
               onChanged: (value) => setState(() {}),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Name is required';
-                if (v.trim().length < 2) return 'Name too short';
-                if (v.trim().length > 50) return 'Name too long (max 50)';
-                if (RegExp(r'[0-9]').hasMatch(v)) return 'Name should not contain numbers';
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) return 'Name is required';
+                if (value.trim().length < 2) return 'Name is too short';
+                if (RegExp(r'[0-9]').hasMatch(value)) return 'Name should not contain numbers';
                 return null;
               },
-              maxLength: 50,
             ),
             const SizedBox(height: 16),
 
@@ -229,7 +280,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
 
             // Save Button
             SizedBox(
-              height: 55,
+               height: 55,
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _saveCustomer,
                 style: ElevatedButton.styleFrom(
@@ -237,9 +288,9 @@ class _AddCustomerScreenState extends State<AddCustomerScreen> {
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: _isSaving
+                 child: _isSaving
                     ? const CircularProgressIndicator(color: Colors.black)
-                    : const Text('Save Customer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    : const Text('Update Customer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
           ],

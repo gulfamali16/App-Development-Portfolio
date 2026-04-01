@@ -3,6 +3,7 @@ import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:share_plus/share_plus.dart';
 import '../../services/customer_service.dart';
 import '../../models/customer_model.dart';
 import '../../config/theme.dart';
@@ -19,7 +20,7 @@ class _BulkImportCustomersScreenState extends State<BulkImportCustomersScreen> {
   int _importedCount = 0;
   final CustomerService _customerService = CustomerService();
 
-  // ✅ Export Template Excel
+  // ✅ Export Template Excel to Recent/Downloads
   Future<void> _exportTemplate() async {
     setState(() => _isLoading = true);
     
@@ -47,19 +48,22 @@ class _BulkImportCustomersScreenState extends State<BulkImportCustomersScreen> {
         TextCellValue('Yes'),
       ]);
       
-      // Save file
-      final directory = await getExternalStorageDirectory();
-      final path = '${directory!.path}/customer_template.xlsx';
-      File(path)
-        ..createSync(recursive: true)
-        ..writeAsBytesSync(excel.encode()!);
+      final bytes = excel.encode();
+      if (bytes == null) throw Exception("Failed to encode excel");
+
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/customer_template.xlsx';
+      final file = File(path);
+      await file.writeAsBytes(bytes);
+      
+      // Use Share to let user save it to Downloads or open it
+      await Share.shareXFiles([XFile(path)], text: 'Customer Import Template');
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Template saved to: $path'),
+          const SnackBar(
+            content: Text('Template ready! Please save it to your device.'),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -94,40 +98,52 @@ class _BulkImportCustomersScreenState extends State<BulkImportCustomersScreen> {
         var bytes = File(result.files.single.path!).readAsBytesSync();
         var excel = Excel.decodeBytes(bytes);
         
-        for (var table in excel.tables.keys) {
-          var sheet = excel.tables[table]!;
+        if (excel.tables.isEmpty) throw Exception('Excel file is empty');
+        
+        // Take ONLY the first sheet
+        var sheetName = excel.tables.keys.first;
+        var sheet = excel.tables[sheetName]!;
+        
+        if (sheet.maxRows == 0) throw Exception('Sheet is empty');
+        
+        // Validate headers
+        var headerRow = sheet.row(0);
+        if (headerRow.isEmpty || 
+            headerRow[0]?.value?.toString() != 'Name*' || 
+            headerRow[1]?.value?.toString() != 'Phone*') {
+          throw Exception('Invalid template format. Please export and use the provided template.');
+        }
           
-          // Skip header row (index 0)
-          for (int i = 1; i < sheet.maxRows; i++) {
-            try {
-              var row = sheet.row(i);
-              
-              // Validate required fields (Name, Phone, Active Status)
-              if (row.isEmpty || row[0]?.value == null || row[1]?.value == null || row[5]?.value == null) {
-                continue; // Skip invalid rows
-              }
-              
-              // Parse active status (Yes/No or true/false)
-              final activeStr = row[5]?.value?.toString().toLowerCase() ?? 'yes';
-              final isActive = activeStr == 'yes' || activeStr == 'true' || activeStr == '1';
-              
-              final customer = CustomerModel(
-                id: DateTime.now().millisecondsSinceEpoch.toString() + i.toString(),
-                name: row[0]?.value?.toString() ?? '',
-                phone: row[1]?.value?.toString() ?? '',
-                email: row[2]?.value?.toString(),
-                address: row[3]?.value?.toString(),
-                city: row[4]?.value?.toString(),
-                isActive: isActive,
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
-              );
-
-              await CustomerService().addCustomer(customer);
-              _importedCount++;
-            } catch (e) {
-              debugPrint('Error importing row $i: $e');
+        // Skip header row (index 0)
+        for (int i = 1; i < sheet.maxRows; i++) {
+          try {
+            var row = sheet.row(i);
+            
+            // Validate required fields (Name, Phone, Active Status)
+            if (row.isEmpty || row[0]?.value == null || row[1]?.value == null || row[5]?.value == null) {
+              continue; // Skip invalid rows
             }
+            
+            // Parse active status (Yes/No or true/false)
+            final activeStr = row[5]?.value?.toString().toLowerCase().trim() ?? 'yes';
+            final isActive = activeStr == 'yes' || activeStr == 'true' || activeStr == '1';
+            
+            final customer = CustomerModel(
+              id: DateTime.now().millisecondsSinceEpoch.toString() + i.toString(),
+              name: row[0]?.value?.toString().trim() ?? '',
+              phone: row[1]?.value?.toString().trim() ?? '',
+              email: row[2]?.value?.toString().trim(),
+              address: row[3]?.value?.toString().trim(),
+              city: row[4]?.value?.toString().trim(),
+              isActive: isActive,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+
+            await _customerService.addCustomer(customer);
+            _importedCount++;
+          } catch (e) {
+            debugPrint('Error importing row $i: $e');
           }
         }
         

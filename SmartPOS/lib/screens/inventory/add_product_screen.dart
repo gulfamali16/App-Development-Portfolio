@@ -40,7 +40,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _priceController.addListener(_calculateMargin);
     _costPriceController.addListener(_calculateMargin);
     _imageUrlController.addListener(() {
-      // Rebuild to show/hide image preview
       setState(() {});
     });
   }
@@ -74,14 +73,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   Future<void> _saveProduct() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     
     try {
-      final imageUrl = _imageUrlController.text.trim();
       final product = ProductModel(
         id: const Uuid().v4(),
         name: _nameController.text.trim(),
@@ -94,37 +90,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
         minStock: int.parse(_minStockController.text),
         unitType: _selectedUnitType,
         categoryId: _selectedCategoryId,
-        imageUrl: imageUrl.isEmpty ? null : imageUrl,
+        imageUrl: _imageUrlController.text.trim().isEmpty ? null : _imageUrlController.text.trim(),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      final provider = Provider.of<ProductProvider>(context, listen: false);
-      final success = await provider.createProduct(product);
+      final success = await Provider.of<ProductProvider>(context, listen: false).createProduct(product);
 
       if (success && mounted) {
-        Fluttertoast.showToast(
-          msg: 'Product added successfully',
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-        );
-        // Navigate back to products screen with success flag
+        Fluttertoast.showToast(msg: 'Product added successfully', backgroundColor: Colors.green);
         Navigator.pop(context, true);
-      } else if (mounted) {
-        Fluttertoast.showToast(
-          msg: 'Failed to add product',
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
       }
     } catch (e) {
-      if (mounted) {
-        Fluttertoast.showToast(
-          msg: 'Error: ${e.toString()}',
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
-      }
+      if (mounted) Fluttertoast.showToast(msg: 'Error: $e', backgroundColor: Colors.red);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -134,10 +112,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
-      appBar: AppBar(
-        title: const Text('Add Product'),
-        backgroundColor: AppTheme.surfaceDark,
-      ),
+      appBar: AppBar(title: const Text('Add Product'), backgroundColor: AppTheme.surfaceDark),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -145,198 +120,109 @@ class _AddProductScreenState extends State<AddProductScreen> {
           children: [
             _buildImageUrlSection(),
             const SizedBox(height: 24),
-            _buildSection(
-              'Product Details',
-              Icons.info_outline,
-              [
-                _buildTextField(
-                  controller: _nameController,
-                  label: 'Product Name *',
-                  hint: 'Enter product name',
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter product name';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  controller: _skuController,
-                  label: 'SKU/Barcode',
-                  hint: 'Enter SKU',
-                  suffixIcon: Icons.qr_code_scanner,
-                ),
-                _buildTextField(
-                  controller: _descriptionController,
-                  label: 'Description',
-                  hint: 'Enter product description',
-                  maxLines: 3,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _buildSection(
-              'Category',
-              Icons.category_outlined,
-              [
-                Consumer<CategoryProvider>(
-                  builder: (context, categoryProvider, child) {
-                    return DropdownButtonFormField<String>(
-                      value: _selectedCategoryId,
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
-                        hintText: 'Select a category',
-                      ),
-                      dropdownColor: AppTheme.surfaceDark,
-                      style: const TextStyle(color: Colors.white),
-                      items: [
-                        const DropdownMenuItem<String>(
-                          value: null,
-                          child: Text('No Category'),
-                        ),
-                        ...categoryProvider.categories.map((cat) {
-                          return DropdownMenuItem<String>(
-                            value: cat.id,
-                            child: Text(cat.name),
-                          );
-                        }),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCategoryId = value;
-                        });
-                      },
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _buildSection(
-              'Pricing',
-              Icons.attach_money,
-              [
-                _buildTextField(
-                  controller: _priceController,
-                  label: 'Selling Price *',
-                  hint: '0.00',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter selling price';
-                    }
-                    if (double.tryParse(value) == null) {
-                      return 'Please enter a valid number';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  controller: _costPriceController,
-                  label: 'Cost Price',
-                  hint: '0.00',
-                  keyboardType: TextInputType.number,
-                ),
-                if (_projectedMargin != null)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryGreen.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Projected Margin:',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        Text(
-                          '${_projectedMargin!.toStringAsFixed(2)}%',
-                          style: const TextStyle(
-                            color: AppTheme.primaryGreen,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _buildSection(
-              'Inventory',
-              Icons.inventory_2_outlined,
-              [
-                _buildTextField(
-                  controller: _quantityController,
-                  label: 'Stock Quantity *',
-                  hint: '0',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter stock quantity';
-                    }
-                    if (int.tryParse(value) == null) {
-                      return 'Please enter a valid number';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  controller: _minStockController,
-                  label: 'Minimum Stock Level *',
-                  hint: '10',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter minimum stock level';
-                    }
-                    if (int.tryParse(value) == null) {
-                      return 'Please enter a valid number';
-                    }
-                    return null;
-                  },
-                ),
-                DropdownButtonFormField<String>(
-                  value: _selectedUnitType,
-                  decoration: const InputDecoration(
-                    labelText: 'Unit Type',
-                  ),
-                  dropdownColor: AppTheme.surfaceDark,
-                  style: const TextStyle(color: Colors.white),
-                  items: const [
-                    DropdownMenuItem(value: 'item', child: Text('Item')),
-                    DropdownMenuItem(value: 'weight', child: Text('Weight')),
-                    DropdownMenuItem(value: 'volume', child: Text('Volume')),
-                    DropdownMenuItem(value: 'box', child: Text('Box')),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedUnitType = value!;
-                    });
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _saveProduct,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+            _buildSection('Basic Info', Icons.info_outline, [
+              TextFormField(
+                controller: _nameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'Product Name *', prefixIcon: Icon(Icons.shopping_bag, color: AppTheme.primaryGreen)),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Name is required';
+                  if (v.trim().length < 2) return 'Name too short';
+                  if (v.trim().length > 50) return 'Name too long (max 50)';
+                  return null;
+                },
+                maxLength: 50,
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text('Save Product'),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _skuController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'SKU / Barcode', prefixIcon: Icon(Icons.qr_code, color: AppTheme.primaryGreen)),
+              ),
+            ]),
+            const SizedBox(height: 24),
+            _buildSection('Pricing', Icons.attach_money, [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _priceController,
+                      style: const TextStyle(color: Colors.white),
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Selling Price *', prefixIcon: Icon(Icons.sell, color: AppTheme.primaryGreen)),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Required';
+                        final p = double.tryParse(v);
+                        if (p == null) return 'Invalid';
+                        if (p <= 0) return '> 0';
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _costPriceController,
+                      style: const TextStyle(color: Colors.white),
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Cost Price', prefixIcon: Icon(Icons.money_off, color: AppTheme.primaryGreen)),
+                      validator: (v) {
+                        if (v != null && v.isNotEmpty && double.tryParse(v) == null) return 'Invalid';
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              if (_projectedMargin != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text('Margin: ${_projectedMargin!.toStringAsFixed(1)}%', 
+                    style: TextStyle(color: _projectedMargin! > 0 ? AppTheme.primaryGreen : Colors.red, fontWeight: FontWeight.bold)),
+                ),
+            ]),
+            const SizedBox(height: 24),
+            _buildSection('Inventory', Icons.inventory_2_outlined, [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _quantityController,
+                      style: const TextStyle(color: Colors.white),
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Current Stock *'),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Required';
+                        if (int.tryParse(v) == null) return 'Invalid';
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _minStockController,
+                      style: const TextStyle(color: Colors.white),
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Min Level *'),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Required';
+                        if (int.tryParse(v) == null) return 'Invalid';
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ]),
+            const SizedBox(height: 32),
+            SizedBox(
+              height: 55,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _saveProduct,
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryGreen, foregroundColor: Colors.black, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: _isLoading ? const CircularProgressIndicator(color: Colors.black) : const Text('Save Product', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
             ),
           ],
         ),
@@ -348,145 +234,27 @@ class _AddProductScreenState extends State<AddProductScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(icon, color: AppTheme.primaryGreen, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
+        Row(children: [Icon(icon, color: AppTheme.primaryGreen, size: 20), const SizedBox(width: 8), Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold))]),
+        const SizedBox(height: 12),
         ...children,
       ],
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    String? hint,
-    IconData? suffixIcon,
-    int maxLines = 1,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextFormField(
-        controller: controller,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          suffixIcon: suffixIcon != null ? Icon(suffixIcon, color: AppTheme.textSecondary) : null,
-        ),
-        maxLines: maxLines,
-        keyboardType: keyboardType,
-        validator: validator,
-      ),
-    );
-  }
-
   Widget _buildImageUrlSection() {
     final imageUrl = _imageUrlController.text.trim();
-    final hasValidUrl = Validators.isValidImageUrl(imageUrl);
-    
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.image_outlined, color: AppTheme.primaryGreen, size: 20),
-            const SizedBox(width: 8),
-            const Text(
-              'Product Image',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        
-        // Image URL Text Field
         TextFormField(
           controller: _imageUrlController,
           style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            labelText: 'Image URL (Optional)',
-            hintText: 'https://example.com/image.jpg',
-            prefixIcon: Icon(Icons.link, color: AppTheme.textSecondary),
-            helperText: 'Enter a valid image URL to display product image',
-            helperMaxLines: 2,
-          ),
-          keyboardType: TextInputType.url,
-          maxLines: 2,
+          decoration: const InputDecoration(labelText: 'Image URL (Optional)', prefixIcon: Icon(Icons.image, color: AppTheme.primaryGreen)),
         ),
-        
-        // Image Preview
-        if (hasValidUrl) ...[
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            height: 200,
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceDark,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppTheme.borderDark.withOpacity(0.5),
-                width: 2,
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
-                          : null,
-                      color: AppTheme.primaryGreen,
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.broken_image,
-                        size: 48,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Failed to load image',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
+        if (Validators.isValidImageUrl(imageUrl))
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(imageUrl, height: 100, width: 100, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 50, color: Colors.grey))),
           ),
-        ],
       ],
     );
   }

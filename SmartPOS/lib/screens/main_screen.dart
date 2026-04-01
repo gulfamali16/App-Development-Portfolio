@@ -46,6 +46,14 @@ class _MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: _screens,
       ),
+      floatingActionButton: _currentIndex != 2 
+          ? FloatingActionButton.extended(
+              onPressed: () => switchTab(2),
+              backgroundColor: AppTheme.primaryGreen,
+              icon: const Icon(Icons.point_of_sale, color: Colors.black),
+              label: const Text('New Sale', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            )
+          : null,
       bottomNavigationBar: _buildBottomNav(),
     );
   }

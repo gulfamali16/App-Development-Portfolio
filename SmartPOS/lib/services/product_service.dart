@@ -89,8 +89,10 @@ class ProductService {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
-      // Sync to Firestore (if online)
-      await _syncService.syncProduct(product);
+      // Sync to Firestore in background to avoid blocking UI
+      _syncService.syncProduct(product).catchError((e) {
+        print('Error syncing product to Firestore: $e');
+      });
 
       return true;
     } catch (e) {
@@ -110,8 +112,10 @@ class ProductService {
         whereArgs: [product.id],
       );
 
-      // Sync to Firestore (if online)
-      await _syncService.syncProduct(product);
+      // Sync to Firestore in background
+      _syncService.syncProduct(product).catchError((e) {
+        print('Error syncing product to Firestore: $e');
+      });
 
       return true;
     } catch (e) {
@@ -130,8 +134,10 @@ class ProductService {
         whereArgs: [id],
       );
 
-      // Delete from Firestore (if online)
-      await _syncService.deleteProductFromCloud(id);
+      // Delete from Firestore in background
+      _syncService.deleteProductFromCloud(id).catchError((e) {
+        print('Error deleting product from Firestore: $e');
+      });
 
       return true;
     } catch (e) {

@@ -18,7 +18,7 @@ class ReportService {
           'totalSales': 0.0,
           'totalOrders': 0,
           'averageOrderValue': 0.0,
-          'topProducts': [],
+          'topProducts': <Map<String, dynamic>>[],
           'error': null,
         };
       }
@@ -44,7 +44,7 @@ class ReportService {
         'totalSales': 0.0,
         'totalOrders': 0,
         'averageOrderValue': 0.0,
-        'topProducts': [],
+        'topProducts': <Map<String, dynamic>>[],
         'error': 'Failed to load report: ${e.toString()}',
       };
     }
@@ -103,9 +103,13 @@ class ReportService {
       buffer.writeln('Top Products:');
       buffer.writeln('Product Name,Quantity,Revenue');
       
-      final topProducts = report['topProducts'] as List<Map<String, dynamic>>;
-      for (final product in topProducts) {
-        buffer.writeln('${product['productName']},${product['quantity']},${product['revenue']}');
+      final topProductsList = report['topProducts'];
+      if (topProductsList is List) {
+        for (final product in topProductsList) {
+          if (product is Map<String, dynamic>) {
+            buffer.writeln('${product['productName']},${product['quantity']},${product['revenue']}');
+          }
+        }
       }
       
       return buffer.toString();

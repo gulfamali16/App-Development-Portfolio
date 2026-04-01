@@ -236,9 +236,20 @@ class AuthService {
     }
   }
 
-  /// Reset password
+  /// Reset password - Now checks if user exists first
   Future<void> resetPassword(String email) async {
     try {
+      // Check if user exists in Firestore first
+      final querySnapshot = await _firestore
+          .collection(AppConstants.usersCollection)
+          .where('email', isEqualTo: email)
+          .get()
+          .timeout(const Duration(seconds: 10));
+
+      if (querySnapshot.docs.isEmpty) {
+        throw Exception('No account found with this email address');
+      }
+
       await _auth.sendPasswordResetEmail(email: email).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
@@ -248,7 +259,8 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     } catch (e) {
-      throw Exception('Password reset failed: ${e.toString()}');
+      // Re-throw the "No account found" error or other custom exceptions
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 

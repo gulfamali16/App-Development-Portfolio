@@ -119,8 +119,12 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                         if (value == null || value.trim().isEmpty) {
                           return 'Category name is required';
                         }
+                        if (value.trim().length > 50) {
+                          return 'Name too long (max 50)';
+                        }
                         return null;
                       },
+                      maxLength: 50,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
