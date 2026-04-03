@@ -28,6 +28,12 @@ class _BulkImportProductsScreenState extends State<BulkImportProductsScreen> {
     
     try {
       var excel = Excel.createExcel();
+      
+      // Remove default "Sheet1" that is created automatically
+      if (excel.tables.containsKey('Sheet1')) {
+        excel.delete('Sheet1');
+      }
+      
       Sheet sheet = excel['Products'];
       
       // Add headers
