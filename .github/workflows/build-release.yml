@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -27,12 +27,9 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Verify Flutter version
-        run: flutter --version
-
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > SmartPOS/android/release-key.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > SmartPOS/android/app/release-key.jks
 
       - name: Create key.properties
         run: |
