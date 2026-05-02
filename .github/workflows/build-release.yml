@@ -20,11 +20,19 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.0'
+          flutter-version: '3.29.0'      # ← fixed for sdk ^3.9.0
 
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > SmartPOS/android/app/release-key.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > SmartPOS/android/release-key.jks
+          #                                                            ↑ android/ not android/app/
+
+      - name: Create key.properties
+        run: |
+          echo "storeFile=release-key.jks" > SmartPOS/android/key.properties
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> SmartPOS/android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> SmartPOS/android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> SmartPOS/android/key.properties
 
       - name: Flutter pub get
         working-directory: ./SmartPOS
@@ -32,11 +40,6 @@ jobs:
 
       - name: Build AAB
         working-directory: ./SmartPOS
-        env:
-          STORE_FILE: release-key.jks
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build appbundle --release
 
       - name: Upload AAB
